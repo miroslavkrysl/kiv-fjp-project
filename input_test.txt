@@ -1,0 +1,11 @@
+newvar:int10
+mywar: int10
+somestring:string
+
+myvar = 5
+
+if (myvar + 2 == (myvar + 1) * 2) {
+	myvar = newvar
+} else {
+	myvar = 3
+}

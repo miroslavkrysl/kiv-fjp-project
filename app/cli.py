@@ -9,10 +9,11 @@ def main():
     lexer = ply_scanner.lex()
 
     # Test it out
-    data = '''
-    3 + 4 * 10
-      + -20 *2
-    '''
+    # data = '''
+    # 3 + 4 * 10
+    #   + -20 *2
+    # '''
+    data = open('../input_test.txt', 'r').read()
 
     # Give the lexical_analyzer some input
     lexer.input(data)
@@ -23,20 +24,20 @@ def main():
         if not tok:
             break  # No more input
         # print(tok)
-        print(tok.type, tok.value, tok.lineno, tok.lexpos)
+        print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
     # ----------
-    # Build the parser
-    parser = ply_parser.yacc()
-    # Parsing loop
-    while True:
-        try:
-            s = input('calc > ')
-        except EOFError:
-            break
-        if not s: continue
-        result = parser.parse(s)
-        print(result)
+    # # Build the parser
+    # parser = ply_parser.yacc()
+    # # Parsing loop
+    # while True:
+    #     try:
+    #         s = input('calc > ')
+    #     except EOFError:
+    #         break
+    #     if not s: continue
+    #     result = parser.parse(s)
+    #     print(result)
 
 
 if __name__ == '__main__':
