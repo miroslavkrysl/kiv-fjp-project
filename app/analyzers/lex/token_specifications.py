@@ -9,6 +9,13 @@ reserved = {
     # keyword: TOKEN
     'if': 'IF',
     'else': 'ELSE',
+
+    'while': 'WHILE',
+    'continue': 'CONTINUE',
+    'break': 'BREAK',
+
+    'function': 'FUNCTION',
+    'return': 'RETURN',
  }
 
 
@@ -36,13 +43,14 @@ t_RBRACKET = r'\]'
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
 
+
 # ##################################################
 # Advanced token regex definitions
 # ########################################
 
 
 def t_IDENTIFIER(t):
-    r'[a-zA-Z]+'
+    r'[a-zA-Z]+[a-zA-Z0-9]*'
     t.value = str(t.value)
     t.type = reserved.get(t.value, 'IDENTIFIER')
     return t

@@ -35,6 +35,11 @@ tokens = (
     # Keywords
     'IF',
     'ELSE',
+    'WHILE',
+    'CONTINUE',
+    'BREAK',
+    'FUNCTION',
+    'RETURN',
 )
 
 
