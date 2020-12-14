@@ -28,16 +28,16 @@ def main():
 
     # ----------
     # # Build the parser
-    # parser = ply_parser.yacc()
-    # # Parsing loop
-    # while True:
-    #     try:
-    #         s = input('calc > ')
-    #     except EOFError:
-    #         break
-    #     if not s: continue
-    #     result = parser.parse(s)
-    #     print(result)
+    parser = ply_parser.yacc()
+    # Parsing loop
+    while True:
+        try:
+            s = input('> ')
+        except EOFError:
+            break
+        if not s: continue
+        result = parser.parse(s)
+        print(result)
 
 
 if __name__ == '__main__':

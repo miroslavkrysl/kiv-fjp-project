@@ -2,6 +2,7 @@
 tokens = (
     'IDENTIFIER',
     'DATA_TYPE_DEF',
+    'COMMA',
 
     # Data Types
     'INTEGER_HEX',
