@@ -39,6 +39,9 @@ def main():
         result = parser.parse(s)
         print(result)
 
+    # result = parser.parse(data)
+    # print(result)
+
 
 if __name__ == '__main__':
     main()
