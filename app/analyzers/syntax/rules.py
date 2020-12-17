@@ -18,7 +18,7 @@ def p_Expression_2(p):
 
 
 def p_Expression_3(p):
-    'Expression : ArithmeticExpression'
+    'Expression : Operator'
     p[0] = ('Expression', p[1])
 
 
@@ -27,9 +27,39 @@ def p_Expression_4(p):
     p[0] = ('Expression', p[1])
 
 
+def p_Expression_5(p):
+    'Expression : IDENTIFIER'
+    p[0] = ('Expression', p[1])
+
+
+def p_Expression_6(p):
+    'Expression : Literal'
+    p[0] = ('Expression', p[1])
+
+
 def p_ExpressionBlock_1(p):
     'ExpressionBlock : Expression'
     p[0] = ('ExpressionBlock', p[1])
+
+
+def p_Literal_1(p):
+    'Literal : INTEGER'
+    p[0] = ('Literal', p[1], 'int')
+
+
+def p_Literal_2(p):
+    'Literal : FLOAT'
+    p[0] = ('Literal', p[1], 'float')
+
+
+def p_Literal_3(p):
+    'Literal : BOOLEAN'
+    p[0] = ('Literal', p[1], 'bool')
+
+
+def p_Literal_4(p):
+    'Literal : STRING'
+    p[0] = ('Literal', p[1], 'string')
 
 
 def p_VariableDeclare_1(p):
@@ -42,69 +72,69 @@ def p_VariableDeclareAssign_1(p):
     p[0] = ('VariableDeclareAssign', p[1], p[2], p[4])
 
 
-def p_ArithmeticExpression_1(p):
-    'ArithmeticExpression : ExpressionPlus'
-    p[0] = ('ArithmeticExpression', p[1])
+def p_Operator_1(p):
+    'Operator : Plus'
+    p[0] = ('Operator', p[1])
 
 
-def p_ArithmeticExpression_2(p):
-    'ArithmeticExpression : ExpressionMinus'
-    p[0] = ('ArithmeticExpression', p[1])
+def p_Operator_2(p):
+    'Operator : Minus'
+    p[0] = ('Operator', p[1])
 
 
-# def p_ArithmeticExpression_3(p):
-#     'ArithmeticExpression : ExpressionUnaryMinus'
-#     p[0] = ('ArithmeticExpression', p[1])
+# def p_Operator_3(p):
+#     'Operator : UnaryMinus'
+#     p[0] = ('Operator', p[1])
 
 
-# def p_ArithmeticExpression_4(p):
-#     'ArithmeticExpression : ExpressionUnaryPlus'
-#     p[0] = ('ArithmeticExpression', p[1])
+# def p_Operator_4(p):
+#     'Operator : UnaryPlus'
+#     p[0] = ('Operator', p[1])
 
 
-def p_ArithmeticExpression_5(p):
-    'ArithmeticExpression : ExpressionMultiply'
-    p[0] = ('ArithmeticExpression', p[1])
+def p_Operator_5(p):
+    'Operator : Multiply'
+    p[0] = ('Operator', p[1])
 
 
-def p_ArithmeticExpression_6(p):
-    'ArithmeticExpression : ExpressionDivide'
-    p[0] = ('ArithmeticExpression', p[1])
+def p_Operator_6(p):
+    'Operator : Divide'
+    p[0] = ('Operator', p[1])
 
 
-def p_ArithmeticExpression_7(p):
-    'ArithmeticExpression : LPAREN ArithmeticExpression RPAREN'
-    p[0] = ('ArithmeticExpression', p[2])
+def p_Operator_7(p):
+    'Operator : LPAREN Operator RPAREN'
+    p[0] = ('Operator', p[2])
 
 
-def p_ExpressionPlus_1(p):
-    'ExpressionPlus : Expression PLUS Expression'
-    p[0] = ('ExpressionPlus', p[2], p[1], p[3])
+def p_Plus_1(p):
+    'Plus : Expression PLUS Expression'
+    p[0] = ('Plus', p[2], p[1], p[3])
 
 
-# def p_ExpressionUnaryPlus_1(p):
-#     'ExpressionUnaryPlus : Expression PLUS Expression'
-#     p[0] = ('ExpressionUnaryPlus', p[2], p[1], p[3])
+# def p_UnaryPlus_1(p):
+#     'UnaryPlus : Expression PLUS Expression'
+#     p[0] = ('UnaryPlus', p[2], p[1], p[3])
 
 
-def p_ExpressionMinus_1(p):
-    'ExpressionMinus : Expression MINUS Expression'
-    p[0] = ('ExpressionMinus', p[2], p[1], p[3])
+def p_Minus_1(p):
+    'Minus : Expression MINUS Expression'
+    p[0] = ('Minus', p[2], p[1], p[3])
 
 
-# def p_ExpressionUnaryMinus_1(p):
-#     'ExpressionUnaryMinus : Expression MINUS Expression'
-#     p[0] = ('ExpressionUnaryMinus', p[2], p[1], p[3])
+# def p_UnaryMinus_1(p):
+#     'UnaryMinus : Expression MINUS Expression'
+#     p[0] = ('UnaryMinus', p[2], p[1], p[3])
 
 
-def p_ExpressionMultiply_1(p):
-    'ExpressionMultiply : Expression TIMES Expression'
-    p[0] = ('ExpressionMultiply', p[2], p[1], p[3])
+def p_Multiply_1(p):
+    'Multiply : Expression TIMES Expression'
+    p[0] = ('Multiply', p[2], p[1], p[3])
 
 
-def p_ExpressionDivide_1(p):
-    'ExpressionDivide : Expression DIVIDE Expression'
-    p[0] = ('ExpressionDivide', p[2], p[1], p[3])
+def p_Divide_1(p):
+    'Divide : Expression DIVIDE Expression'
+    p[0] = ('Divide', p[2], p[1], p[3])
 
 
 def p_ConditionExpression_1(p):
@@ -128,7 +158,7 @@ def p_FunctionDeclare_1(p):
 
 
 def p_FunctionCall_1(p):
-    'FunctionCall : IDENTIFIER LPAREN FunctionCallParameters RPAREN LBRACE ExpressionBlock RBRACE'
+    'FunctionCall : IDENTIFIER LPAREN FunctionCallParameters RPAREN'
     p[0] = ('FunctionCall', p[1], p[3], p[6])
 
 
