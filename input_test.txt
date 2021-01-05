@@ -1,21 +1,22 @@
-newvar:int10
-mywar: int10
-somestring:string
+newvar:int10;
+mywar: int10;
+somestring:string;
 
-myvar = 5
+myvar = 5;
 
 if (myvar + 2 == (myvar + 1) * 2) {
-	myvar = newvar
+	myvar = newvar;
 } else {
-	myvar = 3
+	myvar = 3;
 	
-	i:int8
+	i:int8;
 	while (i < 10) {
-		i = i+ 1
-		callMe(i)
+		i = i+ 1;
+		callMe(i);
 	}
 }
 
-function callMe(parameter:int8) {
-	stdout(parameter)
+function callMe(parameter:int8):string {
+	stdout(parameter);
+	return "hey";
 }

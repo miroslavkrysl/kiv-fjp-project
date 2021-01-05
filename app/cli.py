@@ -27,17 +27,20 @@ def main():
         print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
     # ----------
-    # # Build the parser
-    # parser = ply_parser.yacc()
-    # # Parsing loop
+    # Build the parser
+    parser = ply_parser.yacc()
+    # Parsing loop
     # while True:
     #     try:
-    #         s = input('calc > ')
+    #         s = input('> ')
     #     except EOFError:
     #         break
     #     if not s: continue
     #     result = parser.parse(s)
     #     print(result)
+
+    result = parser.parse(data)
+    print(result)
 
 
 if __name__ == '__main__':
