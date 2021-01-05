@@ -24,6 +24,9 @@ reserved = {
 # ########################################
 
 
+t_SEMICOLON = r'\;'
+t_COMMA = r'\,'
+
 t_PLUS = r'\+'
 t_MINUS = r'-'
 t_TIMES = r'\*'
@@ -62,27 +65,15 @@ def t_DATA_TYPE_DEF(t):
     return t
 
 
-def t_INTEGER_HEX(t):
-    r'0x[0-9A-Fa-f]+'
-    t.value = int(t.value, 16)
+def t_INTEGER(t):
+    r'(0x[0-9A-Fa-f]+)|([0-9]+)|(0o[0-9]+)|(0b[0-1]+)'
+    t.value = int(t.value)
     return t
 
 
-def t_INTEGER_DEC(t):
-    r'[0-9]+'
-    t.value = int(t.value, 10)
-    return t
-
-
-def t_INTEGER_OCT(t):
-    r'0o[0-9]+'
-    t.value = int(t.value, 8)
-    return t
-
-
-def t_INTEGER_BIN(t):
-    r'0b[0-1]+'
-    t.value = int(t.value, 2)
+def t_FLOAT(t):
+    r'\d+(\.\d+){0,1}f'
+    t.value = float(t.value)
     return t
 
 
@@ -96,6 +87,17 @@ def t_STRING(t):
     r'\".*\"'
     t.value = str(t.value)
     return t
+
+
+# ##################################################
+# Token precedence
+# ########################################
+
+
+precedence = (
+    ('left', 'PLUS', 'MINUS'),
+    ('left', 'TIMES', 'DIVIDE'),
+)
 
 
 # ##################################################

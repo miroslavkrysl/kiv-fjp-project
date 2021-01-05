@@ -2,12 +2,12 @@
 tokens = (
     'IDENTIFIER',
     'DATA_TYPE_DEF',
+    'SEMICOLON',
+    'COMMA',
 
-    # Data Types
-    'INTEGER_HEX',
-    'INTEGER_DEC',
-    'INTEGER_OCT',
-    'INTEGER_BIN',
+    # Data Type Values
+    'INTEGER',
+    'FLOAT',
     'BOOLEAN',
     'STRING',
 
