@@ -16,7 +16,7 @@ if (myvar + 2 == (myvar + 1) * 2) {
 	}
 }
 
-function callMe(parameter:int8):string {
+something:string = function(parameter:int8):string {
 	stdout(parameter);
 	return "hey";
-}
+};

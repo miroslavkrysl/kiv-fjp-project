@@ -25,6 +25,7 @@ def p_Expression(p):
                | VariableDeclare SEMICOLON
                | VariableAssign SEMICOLON
                | Operator
+               | FunctionDeclare
                | FunctionCall
                | FunctionReturn
                | LoopContinue
@@ -181,14 +182,14 @@ def p_WhileLoopExpression(p):
 
 def p_FunctionDeclare_void(p):
     '''
-    FunctionDeclare : FUNCTION IDENTIFIER LPAREN FunctionDeclareParameters RPAREN LBRACE ExpressionBlock RBRACE
+    FunctionDeclare : FUNCTION LPAREN FunctionDeclareParameters RPAREN LBRACE ExpressionBlock RBRACE
     '''
     p[0] = ('FunctionDeclare-void', p[2], p[4], p[7])
 
 
 def p_FunctionDeclare_return(p):
     '''
-    FunctionDeclare : FUNCTION IDENTIFIER LPAREN FunctionDeclareParameters RPAREN DATA_TYPE_DEF LBRACE ExpressionBlock RBRACE
+    FunctionDeclare : FUNCTION LPAREN FunctionDeclareParameters RPAREN DATA_TYPE_DEF LBRACE ExpressionBlock RBRACE
     '''
     p[0] = ('FunctionDeclare-return', p[2], p[4], p[8], p[6])
 
