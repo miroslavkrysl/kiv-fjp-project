@@ -1,22 +1,22 @@
-newvar:int10;
-mywar: int10;
-somestring:string;
+const hello: Int = 25;
 
-myvar = 5;
+fn hello(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
+    call(41, 23, "string");
 
-if (myvar + 2 == (myvar + 1) * 2) {
-	myvar = newvar;
-} else {
-	myvar = 3;
-	
-	i:int8;
-	while (i < 10) {
-		i = i+ 1;
-		callMe(i);
-	}
+    var hoj: Str = "gsd";
+    var joh: Int;
+    const konstanta: Int = 14;
+
+    if hello == jello & true {
+        call();
+    }
+    else {
+        hello();
+        jello = a + 21;
+    }
+
+    while true {
+        break;
+        continue;
+    }
 }
-
-something:string = function(parameter:int8):string {
-	stdout(parameter);
-	return "hey";
-};
