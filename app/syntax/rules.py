@@ -406,7 +406,7 @@ def p_variable_definition(p):
 
 def p_constant_definition(p):
     """
-    constant_definition : CONST IDENTIFIER COLON type ASSIGN expression
+    constant_definition : CONST IDENTIFIER COLON type ASSIGN const_value
     """
     p[0] = (Node.CONSTANT_DEFINITION, p[2], p[4], p[6])
 
@@ -480,13 +480,52 @@ def p_items(p):
 def p_items_list(p):
     """
     items_list  : expression
-                | items COMMA expression
+                | items_list COMMA expression
     """
     if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[3]]
 
+
+def p_const_value(p):
+    """
+    const_value : value_int
+                | value_real
+                | value_bool
+                | value_str
+                | const_value_array
+    """
+    p[0] = p[1]
+
+
+def p_const_value_array(p):
+    """
+    const_value_array   : LBRACKET const_items RBRACKET
+    """
+    p[0] = (Node.VALUE_ARRAY, p[2])
+
+
+def p_const_items(p):
+    """
+    const_items :
+                | const_items_list
+    """
+    if len(p) <= 1:
+        p[0] = []
+    else:
+        p[0] = p[1]
+
+
+def p_const_items_list(p):
+    """
+    const_items_list    : const_value
+                        | const_items_list COMMA const_value
+    """
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
 
 # --- Other ---
 
