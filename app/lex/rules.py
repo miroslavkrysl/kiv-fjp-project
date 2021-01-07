@@ -54,7 +54,7 @@ EXPONENT = r'((e|E)' + SIGN + DIGITS + r')'
 REAL1 = r'(' + DIGITS + r'\.' + DIGITS + EXPONENT + r'?' + r')'
 REAL2 = r'(' + DIGITS + EXPONENT + r')'
 REAL3 = r'(' + DIGITS + r'\.' + r')'
-LITERAL_REAL = SIGN + r'(' + REAL1 + r'|' + REAL2 + r'|' + REAL3 + r')'
+LITERAL_REAL = r'(' + REAL1 + r'|' + REAL2 + r'|' + REAL3 + r')'
 
 
 @TOKEN(LITERAL_REAL)
