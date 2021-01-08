@@ -5,6 +5,7 @@ import ply.lex
 import ply.yacc
 import app.lex
 import app.syntax
+import app.sem
 
 
 def main():
@@ -26,6 +27,7 @@ def main():
     result = parser.parse(data, lexer=lexer, tracking=True)
 
     pp(result, width=1)
+    app.sem.analyze(result)
 
 
 if __name__ == '__main__':

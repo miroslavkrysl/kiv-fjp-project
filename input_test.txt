@@ -1,6 +1,6 @@
-const hello: Int = 25;
+const hello: Int = 12;
 
-fn hello(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
+fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
     call(41, 23, "string");
 
     var hoj: Str = "gsd";
@@ -19,4 +19,7 @@ fn hello(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
         break;
         continue;
     }
+}
+
+fn call(a:Int, b:Int, c:Str) {
 }

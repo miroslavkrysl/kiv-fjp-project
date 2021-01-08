@@ -55,7 +55,8 @@ def p_function_definition(p):
                         | FN IDENTIFIER LPAREN parameters RPAREN COLON type LBRACE statements RBRACE
     """
     ret = None if len(p) == 9 else p[7]
-    p[0] = (Node.FUNCTION_DEFINITION, p[2], p[4], ret, p[9])
+    statements = p[7] if len(p) == 9 else p[9]
+    p[0] = (Node.FUNCTION_DEFINITION, p[2], p[4], ret, statements)
 
 
 def p_parameters(p):
