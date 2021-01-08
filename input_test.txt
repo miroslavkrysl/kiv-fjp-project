@@ -5,14 +5,15 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
 
     var hoj: Str = "gsd";
     var joh: Int;
+    var arra: [Int];
     const konstanta: Int = 14;
 
-    if hello == jello & true {
+    if hello == konstanta & true {
         call(10,2,"s");
     }
     else {
         hell();
-        joh = 10 + 20;
+        arra = [5,5];
     }
 
     while true {
