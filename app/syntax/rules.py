@@ -192,7 +192,7 @@ def p_if_else(p):
     """
     if_else : IF expression LBRACE statements RBRACE ELSE LBRACE statements RBRACE
     """
-    p[0] = (Node.IF, p[2], p[4], p[8])
+    p[0] = (Node.IF_ELSE, p[2], p[4], p[8])
 
 
 # --- Cycles ---

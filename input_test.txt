@@ -8,11 +8,11 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
     const konstanta: Int = 14;
 
     if hello == jello & true {
-        call();
+        call(10,2,"s");
     }
     else {
-        hello();
-        jello = a + 21;
+        hell();
+        joh = 10 + 20;
     }
 
     while true {
@@ -22,4 +22,7 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
 }
 
 fn call(a:Int, b:Int, c:Str) {
+}
+
+fn hell() {
 }
