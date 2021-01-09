@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 class Descriptor:
     @abstractmethod
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         pass
 
     def __eq__(self, other):
@@ -24,7 +24,7 @@ class SimpleFieldDescriptor(FieldDescriptor, ABC):
 
 class ByteDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'B'
 
     def __str__(self):
@@ -33,7 +33,7 @@ class ByteDesc(SimpleFieldDescriptor):
 
 class CharDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'C'
 
     def __str__(self):
@@ -42,7 +42,7 @@ class CharDesc(SimpleFieldDescriptor):
 
 class DoubleDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'D'
 
     def __str__(self):
@@ -51,7 +51,7 @@ class DoubleDesc(SimpleFieldDescriptor):
 
 class FloatDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'F'
 
     def __str__(self):
@@ -60,7 +60,7 @@ class FloatDesc(SimpleFieldDescriptor):
 
 class IntDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'I'
 
     def __str__(self):
@@ -69,7 +69,7 @@ class IntDesc(SimpleFieldDescriptor):
 
 class LongDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'J'
 
     def __str__(self):
@@ -80,7 +80,7 @@ class InstanceDesc(SimpleFieldDescriptor):
     def __init__(self, class_name: str):
         self._class_name = class_name
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'L{0};'.format(self._class_name)
 
     def __str__(self):
@@ -98,7 +98,7 @@ class InstanceDesc(SimpleFieldDescriptor):
 
 class ShortDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'S'
 
     def __str__(self):
@@ -107,7 +107,7 @@ class ShortDesc(SimpleFieldDescriptor):
 
 class BooleanDesc(SimpleFieldDescriptor):
 
-    def classfile_utf8(self) -> str:
+    def utf8(self) -> str:
         return 'Z'
 
     def __str__(self):
@@ -128,8 +128,8 @@ class ArrayDesc(FieldDescriptor):
     def descriptor(self):
         return self._descriptor
 
-    def classfile_utf8(self) -> str:
-        return self._dim * '[' + self._descriptor.classfile_utf8()
+    def utf8(self) -> str:
+        return self._dim * '[' + self._descriptor.utf8()
 
     def __str__(self):
         return "{0}{1}".format(self._descriptor, (self._dim * '[]'))
@@ -158,9 +158,9 @@ class MethodDescriptor(Descriptor):
     def ret(self):
         return self._ret
 
-    def classfile_utf8(self) -> str:
-        return '({0}){1}'.format(''.join(map(lambda d: d.classfile_utf8(), self._params)),
-                                 self._ret.classfile_utf8())
+    def utf8(self) -> str:
+        return '({0}){1}'.format(''.join(map(lambda d: d.utf8(), self._params)),
+                                 self._ret.utf8())
 
     def __str__(self):
         return '{0} ({1})'.format(self._ret, ', '.join(map(lambda p: str(p), self._params)))
