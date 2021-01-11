@@ -224,30 +224,30 @@ class ArrayDesc(FieldDescriptor):
 class MethodDescriptor(Descriptor):
 
     def __init__(self, params_descriptor: List[FieldDescriptor], return_descriptor: Optional[FieldDescriptor] = None):
-        self._params_descriptor: List[FieldDescriptor] = params_descriptor
+        self._params_descriptors: List[FieldDescriptor] = params_descriptor
         self._return_descriptor: Optional[FieldDescriptor] = return_descriptor
 
     @property
-    def params(self):
-        return self._params_descriptor
+    def params_descriptors(self):
+        return self._params_descriptors
 
     @property
-    def ret(self):
+    def return_descriptor(self):
         return self._return_descriptor
 
     def utf8(self) -> str:
-        return '({0}){1}'.format(''.join(map(lambda d: d.utf8(), self._params_descriptor)),
+        return '({0}){1}'.format(''.join(map(lambda d: d.utf8(), self._params_descriptors)),
                                  self._return_descriptor.utf8())
 
     def __str__(self):
-        return '{0} ({1})'.format(self._return_descriptor, ', '.join(map(lambda p: str(p), self._params_descriptor)))
+        return '{0} ({1})'.format(self._return_descriptor, ', '.join(map(lambda p: str(p), self._params_descriptors)))
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
 
-        return self._params_descriptor == other._params_descriptor \
+        return self._params_descriptors == other._params_descriptors \
             and self._return_descriptor == other._return_descriptor
 
     def __hash__(self):
-        return hash((self._params_descriptor, self._return_descriptor))
+        return hash((self._params_descriptors, self._return_descriptor))
