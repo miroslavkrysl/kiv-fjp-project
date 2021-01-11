@@ -1,6 +1,79 @@
 from abc import abstractmethod, ABC
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
+from app.types import BaseType
+
+
+# --- Java operand types ---
+
+class JOperandType(ABC):
+    pass
+
+
+class JOperandTypeInt(JOperandType):
+    pass
+
+
+class JOperandTypeLong(JOperandType):
+    pass
+
+
+class JOperandTypeFloat(JOperandType):
+    pass
+
+
+class JOperandTypeDouble(JOperandType):
+    pass
+
+
+class JOperandTypeReference(JOperandType):
+    pass
+
+
+# # --- Java names ---
+#
+# class ObjectName(ABC):
+#     @abstractmethod
+#     def utf8(self):
+#         pass
+#
+#
+# class ClassName(ObjectName):
+#     def __init__(self, name: str):
+#         self.name = name
+#
+#     def utf8(self):
+#         return f'[L{self.name};'
+#
+#
+# class FieldName:
+#     def __init__(self, name: str):
+#         self.name = name
+#
+#     def utf8(self):
+#         return self.name
+#
+#
+# class MethodName:
+#     INIT_METHOD = '<init>'
+#     CLASS_INIT_METHOD = '<clinit>'
+#
+#     def __init__(self, name: str):
+#         self.name = name
+#
+#     @classmethod
+#     def new_init(cls):
+#         cls(cls.INIT_METHOD)
+#
+#     @classmethod
+#     def new_class_init(cls):
+#         cls(cls.CLASS_INIT_METHOD)
+#
+#     def utf8(self):
+#         return self.name
+
+
+# --- Java type descriptors ---
 
 class Descriptor:
     @abstractmethod
@@ -18,11 +91,11 @@ class FieldDescriptor(Descriptor, ABC):
     pass
 
 
-class SimpleFieldDescriptor(FieldDescriptor, ABC):
+class BaseDescriptor(FieldDescriptor, ABC):
     pass
 
 
-class ByteDesc(SimpleFieldDescriptor):
+class ByteDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'B'
@@ -31,7 +104,7 @@ class ByteDesc(SimpleFieldDescriptor):
         return 'byte'
 
 
-class CharDesc(SimpleFieldDescriptor):
+class CharDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'C'
@@ -40,7 +113,7 @@ class CharDesc(SimpleFieldDescriptor):
         return 'char'
 
 
-class DoubleDesc(SimpleFieldDescriptor):
+class DoubleDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'D'
@@ -49,7 +122,7 @@ class DoubleDesc(SimpleFieldDescriptor):
         return 'double'
 
 
-class FloatDesc(SimpleFieldDescriptor):
+class FloatDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'F'
@@ -58,7 +131,7 @@ class FloatDesc(SimpleFieldDescriptor):
         return 'float'
 
 
-class IntDesc(SimpleFieldDescriptor):
+class IntDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'I'
@@ -67,7 +140,7 @@ class IntDesc(SimpleFieldDescriptor):
         return 'int'
 
 
-class LongDesc(SimpleFieldDescriptor):
+class LongDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'J'
@@ -76,12 +149,16 @@ class LongDesc(SimpleFieldDescriptor):
         return 'long'
 
 
-class InstanceDesc(SimpleFieldDescriptor):
+class ObjectDesc(BaseDescriptor):
     def __init__(self, class_name: str):
         self._class_name = class_name
 
+    @property
+    def class_name(self):
+        return self._class_name
+
     def utf8(self) -> str:
-        return 'L{0};'.format(self._class_name)
+        return f'[L{self._class_name};'
 
     def __str__(self):
         return self._class_name
@@ -96,7 +173,7 @@ class InstanceDesc(SimpleFieldDescriptor):
         return hash(self._class_name)
 
 
-class ShortDesc(SimpleFieldDescriptor):
+class ShortDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'S'
@@ -105,7 +182,7 @@ class ShortDesc(SimpleFieldDescriptor):
         return 'short'
 
 
-class BooleanDesc(SimpleFieldDescriptor):
+class BooleanDesc(BaseDescriptor):
 
     def utf8(self) -> str:
         return 'Z'
@@ -115,61 +192,62 @@ class BooleanDesc(SimpleFieldDescriptor):
 
 
 class ArrayDesc(FieldDescriptor):
-    def __init__(self, dim, descriptor):
+    def __init__(self, dim, inner):
         assert 1 <= dim <= 255
         self._dim: int = dim
-        self._descriptor: SimpleFieldDescriptor = descriptor
+        self._inner: BaseDescriptor = inner
 
     @property
     def dim(self):
         return self._dim
 
     @property
-    def descriptor(self):
-        return self._descriptor
+    def inner(self):
+        return self._inner
 
     def utf8(self) -> str:
-        return self._dim * '[' + self._descriptor.utf8()
+        return self._dim * '[' + self._inner.utf8()
 
     def __str__(self):
-        return "{0}{1}".format(self._descriptor, (self._dim * '[]'))
+        return "{0}{1}".format(self._inner, (self._dim * '[]'))
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
 
-        return self._dim == other._dim and self._descriptor == other._descriptor
+        return self._dim == other._dim and self._inner == other._inner
 
     def __hash__(self):
-        return hash((self._dim, self._descriptor))
+        return hash((self._dim, self._inner))
 
 
 class MethodDescriptor(Descriptor):
 
-    def __init__(self, params_descriptor, return_descriptor):
-        self._params: Tuple[FieldDescriptor] = params_descriptor
-        self._ret: Optional[FieldDescriptor] = return_descriptor
+    def __init__(self, params_descriptor: List[FieldDescriptor], return_descriptor: Optional[FieldDescriptor] = None):
+        self._params_descriptor: List[FieldDescriptor] = params_descriptor
+        self._return_descriptor: Optional[FieldDescriptor] = return_descriptor
 
     @property
     def params(self):
-        return self._params
+        return self._params_descriptor
 
     @property
     def ret(self):
-        return self._ret
+        return self._return_descriptor
 
     def utf8(self) -> str:
-        return '({0}){1}'.format(''.join(map(lambda d: d.utf8(), self._params)),
-                                 self._ret.utf8())
+        return '({0}){1}'.format(''.join(map(lambda d: d.utf8(), self._params_descriptor)),
+                                 self._return_descriptor.utf8())
 
     def __str__(self):
-        return '{0} ({1})'.format(self._ret, ', '.join(map(lambda p: str(p), self._params)))
+        return '{0} ({1})'.format(self._return_descriptor, ', '.join(map(lambda p: str(p), self._params_descriptor)))
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
 
-        return self._params == other._params and self._ret == other._ret
+        return self._params_descriptor == other._params_descriptor \
+            and self._return_descriptor == other._return_descriptor
 
     def __hash__(self):
-        return hash((self._params, self._ret))
+        return hash((self._params_descriptor, self._return_descriptor))

@@ -1,28 +1,5 @@
-const hello: Int = 12;
+
 
 fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
-    call(41, 23, "string");
-
-    var hoj: Str = "gsd";
-    var joh: Int;
-    const konstanta: Int = 14;
-
-    if hello == jello & true {
-        call(10,2,"s");
-    }
-    else {
-        hell();
-        joh = 10 + 20;
-    }
-
-    while true {
-        break;
-        continue;
-    }
-}
-
-fn call(a:Int, b:Int, c:Str) {
-}
-
-fn hell() {
+    a = (hello[1][2] = jello[3 + 4][5] = jello = 6);
 }

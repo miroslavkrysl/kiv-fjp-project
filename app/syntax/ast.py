@@ -13,7 +13,6 @@ class Node(Enum):
     CONTINUE = auto()
 
     # Operators
-    ASSIGN = auto()
     INDEX = auto()
     UMINUS = auto()
     UPLUS = auto()
@@ -34,6 +33,7 @@ class Node(Enum):
     # Functions
     FUNCTION_DEFINITION = auto()
     FUNCTION_CALL = auto()
+    FUNCTION_CALL_VALUE = auto()
     RETURN = auto()
 
     # Literals
@@ -44,11 +44,15 @@ class Node(Enum):
     VALUE_ARRAY = auto()
 
     # Variables
-    VARIABLE_VALUE = auto()
+    VARIABLE_STORE = auto()
+    ARRAY_STORE = auto()
+    VARIABLE_LOAD = auto()
+    ARRAY_LOAD = auto()
+    VARIABLE_ASSIGNMENT = auto()
+    ARRAY_ASSIGNMENT = auto()
     VARIABLE_DECLARATION = auto()
     VARIABLE_DEFINITION = auto()
     CONSTANT_DEFINITION = auto()
-    VARIABLE_ASSIGN = auto()
 
     # Types
     TYPE_INT = auto()
