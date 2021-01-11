@@ -1,5 +1,6 @@
 from app.syntax.ast import Node
-from app.lex.defs import tokens
+
+from app.lex import tokens
 
 precedence = (
     ('right', 'ASSIGN'),
@@ -9,21 +10,20 @@ precedence = (
     ('left', 'EQ', 'NE', 'LT', 'GT', 'LE', 'GE'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'MUL', 'DIV'),
-    ('left', 'LBRACKET'),
     ('right', 'UMINUS', 'UPLUS')
 )
 
 
-def p_definition(p):
+def p_program(p):
     """
     definitions :
                 | definitions constant_definition SEMICOLON
                 | definitions function_definition
     """
     if len(p) <= 1:
-        p[0] = []
+        p[0] = (Node.PROGRAM, [])
     else:
-        p[0] = p[1] + [p[2]]
+        p[0] = (Node.PROGRAM, [*p[1][1], p[2]])
 
 
 def p_statements(p):
@@ -32,7 +32,7 @@ def p_statements(p):
                 | statements variable_declaration SEMICOLON
                 | statements variable_definition SEMICOLON
                 | statements constant_definition SEMICOLON
-                | statements variable_assign SEMICOLON
+                | statements store SEMICOLON
                 | statements function_call SEMICOLON
                 | statements return SEMICOLON
                 | statements if
@@ -44,7 +44,7 @@ def p_statements(p):
     if len(p) <= 1:
         p[0] = []
     else:
-        p[0] = p[1] + [p[2]]
+        p[0] = [*p[1], p[2]]
 
 
 # --- Functions ---
@@ -97,9 +97,9 @@ def p_function_call(p):
 
 def p_function_call_value(p):
     """
-    function_call_value : IDENTIFIER LPAREN arguments RPAREN
+    function_call_value : function_call
     """
-    p[0] = (Node.FUNCTION_CALL_VALUE, p[1], p[3])
+    p[0] = (Node.FUNCTION_CALL_VALUE, p[1][1], p[1][3])
 
 
 def p_arguments(p):
@@ -121,7 +121,7 @@ def p_arguments_list(p):
     if len(p) == 2:
         p[0] = [p[1]]
     else:
-        p[0] = p[1] + [p[3]]
+        p[0] = [*p[1], p[3]]
 
 
 def p_return(p):
@@ -176,7 +176,10 @@ def p_type_array(p):
     """
     type_array   : LBRACKET type RBRACKET
     """
-    p[0] = (Node.TYPE_ARRAY, p[2])
+    if p[2][0] == Node.TYPE_ARRAY:
+        p[0] = (Node.TYPE_ARRAY, p[2][1] + 1, p[2][2])
+    else:
+        p[0] = (Node.TYPE_ARRAY, 1, p[2])
 
 
 # --- Conditions ---
@@ -223,7 +226,8 @@ def p_continue(p):
 def p_expression(p):
     """
     expression  : value
-                | variable_value
+                | load
+                | assignment
                 | operator
                 | parens
                 | function_call_value
@@ -242,9 +246,7 @@ def p_parens(p):
 
 def p_operator(p):
     """
-    operator    : assign
-                | index
-                | uplus
+    operator    : uplus
                 | uminus
                 | mul
                 | div
@@ -263,18 +265,14 @@ def p_operator(p):
     p[0] = p[1]
 
 
-def p_assign(p):
+def p_assignment(p):
     """
-    assign   : IDENTIFIER ASSIGN expression
+    assignment : store
     """
-    p[0] = (Node.ASSIGN, p[1], p[3])
-
-
-def p_index(p):
-    """
-    index   : expression LBRACKET expression RBRACKET
-    """
-    p[0] = (Node.INDEX, p[1], p[3])
+    if p[1][0] == Node.VARIABLE_STORE:
+        p[0] = (Node.VARIABLE_ASSIGNMENT, p[1][1], p[1][2])
+    else:
+        p[0] = (Node.ARRAY_ASSIGNMENT, p[1][1], p[1][2], p[1][3])
 
 
 def p_uplus(p):
@@ -384,13 +382,6 @@ def p_or(p):
 
 # --- Variables ---
 
-def p_variable_value(p):
-    """
-    variable_value : IDENTIFIER
-    """
-    p[0] = (Node.VARIABLE_VALUE, p[1])
-
-
 def p_variable_declaration(p):
     """
     variable_declaration    : VAR IDENTIFIER COLON type
@@ -407,16 +398,42 @@ def p_variable_definition(p):
 
 def p_constant_definition(p):
     """
-    constant_definition : CONST IDENTIFIER COLON type ASSIGN const_value
+    constant_definition : CONST IDENTIFIER COLON type ASSIGN expression
     """
     p[0] = (Node.CONSTANT_DEFINITION, p[2], p[4], p[6])
 
 
-def p_variable_assign(p):
+def p_load(p):
     """
-    variable_assign : IDENTIFIER ASSIGN expression
+    load    : IDENTIFIER
+            | expression array_access
     """
-    p[0] = (Node.VARIABLE_ASSIGN, p[1], p[3])
+    if len(p) == 2:
+        p[0] = (Node.VARIABLE_LOAD, p[1])
+    else:
+        p[0] = (Node.ARRAY_LOAD, p[1], p[2])
+
+
+def p_store(p):
+    """
+    store   : IDENTIFIER ASSIGN expression
+            | IDENTIFIER array_access ASSIGN expression
+    """
+    if len(p) == 4:
+        p[0] = (Node.VARIABLE_STORE, p[1], p[3])
+    else:
+        p[0] = (Node.ARRAY_STORE, p[1], p[2], p[4])
+
+
+def p_array_access(p):
+    """
+    array_access    : LBRACKET expression RBRACKET
+                    | array_access LBRACKET expression RBRACKET
+    """
+    if len(p) == 4:
+        p[0] = [p[2]]
+    else:
+        p[0] = [*p[1], p[3]]
 
 
 # --- Values ---
@@ -488,45 +505,6 @@ def p_items_list(p):
     else:
         p[0] = p[1] + [p[3]]
 
-
-def p_const_value(p):
-    """
-    const_value : value_int
-                | value_real
-                | value_bool
-                | value_str
-                | const_value_array
-    """
-    p[0] = p[1]
-
-
-def p_const_value_array(p):
-    """
-    const_value_array   : LBRACKET const_items RBRACKET
-    """
-    p[0] = (Node.VALUE_ARRAY, p[2])
-
-
-def p_const_items(p):
-    """
-    const_items :
-                | const_items_list
-    """
-    if len(p) <= 1:
-        p[0] = []
-    else:
-        p[0] = p[1]
-
-
-def p_const_items_list(p):
-    """
-    const_items_list    : const_value
-                        | const_items_list COMMA const_value
-    """
-    if len(p) == 2:
-        p[0] = [p[1]]
-    else:
-        p[0] = p[1] + [p[3]]
 
 # --- Other ---
 

@@ -3,19 +3,30 @@ from abc import ABC
 from enum import IntEnum
 from typing import Optional
 
-from app.java.opcode import Opcode, stack_change
-from app.java.util import is_short, is_byte, is_ubyte, is_ushort
+from app.gen.opcode import Opcode, stack_change
+from app.gen.util import is_short, is_byte, is_ubyte, is_ushort
 
 
-class ArrayType(IntEnum):
-    BOOLEAN = 4
-    CHAR = 5
-    FLOAT = 6
-    DOUBLE = 7
-    BYTE = 8
-    SHORT = 9
-    INT = 10
-    LONG = 11
+
+
+
+class JConstant(ABC):
+    pass
+
+
+class ConstInt(JConstant):
+    def __init__(self, value: int):
+        self.value = value
+
+
+class ConstDouble(JConstant):
+    def __init__(self, value: float):
+        self.value = value
+
+
+class ConstString(JConstant):
+    def __init__(self, value: str):
+        self.value = value
 
 
 class CodeOverflowError(Exception):
@@ -47,10 +58,11 @@ class TooLongJumpError(Exception):
         return f'The jump from instruction {self.src} to {self.dest} is too long ({self.dest - self.src})'
 
 
-class Code(ABC):
+class CodeBuilder(ABC):
 
     def __init__(self):
-        self._instructions: bytearray = bytearray()
+        self._constants = None
+        self._instructions: []
         self._current_stack: int = 0
         self._max_stack: int = 0
         self._locals: int = 0
@@ -95,6 +107,10 @@ class Code(ABC):
         self._locals += size
         return index
 
+    def add_const(self, value) -> int:
+        # TODO
+        pass
+
     def set_jump_index(self, src: int, dest: int):
         assert is_ushort(src)
         assert is_ushort(dest)
@@ -111,26 +127,10 @@ class Code(ABC):
     def ACONST_NULL(self):
         self._add_normal_instruction(Opcode.ACONST_NULL)
 
-    def ICONST_M1(self):
-        self._add_normal_instruction(Opcode.ICONST_M1)
+    def constant(self, value: JConstant) -> int:
+        self._constants.append(value)
+        return len(self._constants)
 
-    def ICONST_0(self):
-        self._add_normal_instruction(Opcode.ICONST_0)
-
-    def ICONST_1(self):
-        self._add_normal_instruction(Opcode.ICONST_1)
-
-    def ICONST_2(self):
-        self._add_normal_instruction(Opcode.ICONST_2)
-
-    def ICONST_3(self):
-        self._add_normal_instruction(Opcode.ICONST_3)
-
-    def ICONST_4(self):
-        self._add_normal_instruction(Opcode.ICONST_4)
-
-    def ICONST_5(self):
-        self._add_normal_instruction(Opcode.ICONST_5)
 
     def LCONST_0(self):
         self._add_normal_instruction(Opcode.LCONST_0)

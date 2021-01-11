@@ -20,6 +20,8 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
         break;
         continue;
     }
+
+    hello[12][12] = jello[25 + 4][40] = 11;
 }
 
 fn call(a:Int, b:Int, c:Str) {

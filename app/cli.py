@@ -5,7 +5,25 @@ import ply.lex
 import ply.yacc
 import app.lex
 import app.syntax
-import app.sem
+import app.sem.analyze
+from app.syntax import Node
+
+
+def print_tree(x, level=0):
+    if isinstance(x, tuple):
+        print(('    ' * level) + str(x[0]))
+        for i in x[1:]:
+            print_tree(i, level+1)
+    elif isinstance(x, list):
+        if x:
+            print('    ' * level + '[')
+            for i in x:
+                print_tree(i, level + 1)
+            print('    ' * level + ']')
+        else:
+            print('    ' * level + str(x))
+    else:
+        print(('    ' * level) + str(x))
 
 
 def main():
@@ -26,8 +44,8 @@ def main():
     parser = ply.yacc.yacc(module=app.syntax)
     result = parser.parse(data, lexer=lexer, tracking=True)
 
-    pp(result, width=1)
-    app.sem.analyze(result)
+    print_tree(result)
+    # app.sem.analyze.analyze(result)
 
 
 if __name__ == '__main__':

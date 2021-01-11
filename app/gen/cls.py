@@ -1,8 +1,8 @@
 from typing import Tuple, Dict
 
-from app.java.classfile.classfile import ClassFile
-from app.java.code import Code
-from app.java.descriptor import MethodDescriptor, FieldDescriptor
+from app.gen.classfile.classfile import ClassFile
+from app.gen.cfcode import CodeBuilder
+from app.gen.descriptor import MethodDescriptor, FieldDescriptor
 
 
 class Field:
@@ -20,7 +20,7 @@ class Method:
     def __init__(self, name, descriptor):
         self._name = name
         self._descriptor: MethodDescriptor = descriptor
-        self._code: Code = Code()
+        self._code: CodeBuilder = CodeBuilder()
         # TODO: initialize code locals for parameters
 
     @property
@@ -32,7 +32,7 @@ class Method:
         return self._descriptor
 
     @property
-    def code(self) -> Code:
+    def code(self) -> CodeBuilder:
         return self.code
 
     def __str__(self):
