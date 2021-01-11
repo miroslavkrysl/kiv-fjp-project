@@ -3,6 +3,8 @@ from enum import Enum, auto
 
 
 class Node(Enum):
+    PROGRAM = auto()
+
     # Conditions
     IF = auto()
     IF_ELSE = auto()

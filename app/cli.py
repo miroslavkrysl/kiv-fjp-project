@@ -6,21 +6,24 @@ import ply.yacc
 import app.lex
 import app.syntax
 import app.sem.analyze
+from app.syntax import Node
 
 
 def print_tree(x, level=0):
-    p = []
-    r = []
-    for i in x:
-        if isinstance(i, tuple):
-            r.append(i)
+    if isinstance(x, tuple):
+        print(('    ' * level) + str(x[0]))
+        for i in x[1:]:
+            print_tree(i, level+1)
+    elif isinstance(x, list):
+        if x:
+            print('    ' * level + '[')
+            for i in x:
+                print_tree(i, level + 1)
+            print('    ' * level + ']')
         else:
-            p.append(i)
-
-    print(('    ' * (level + 1)) + ', '.join(map(str, p)))
-
-    for i in r:
-        print_tree(i, level + 1)
+            print('    ' * level + str(x))
+    else:
+        print(('    ' * level) + str(x))
 
 
 def main():
