@@ -9,6 +9,7 @@ from app.names import FN_MAIN, MAIN_PARAMS, MAIN_RETURN, BOOL_INT_FALSE, BOOL_IN
 from app.types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
 from app.syntax import Node
 
+
 def _create_field_descriptor(t: Type) -> FieldDescriptor:
     if isinstance(t, TypeInt):
         return IntDesc()
@@ -41,13 +42,89 @@ def _create_method_descriptor(params: List[Type], ret: Optional[Type]) -> Method
     return MethodDescriptor(params_desc, ret_desc)
 
 
-def _get_variable(variables, name) -> Union[int, ]:
-    for i in symbols:
+def _statement_while(code: Code, statement):
+    condition = statement[1]
+    block = statement[2]
+
+    start = code.pos()
+    _expression(code, condition)
+    cond_pos = code.pos()
+    code.if_eq()
+
+    breaks = []
+    for s in block:
+        _statement(code, s, start, breaks)
+
+    end_pos = code.pos()
+    code.update_jump(cond_pos, end_pos)
+    for b in breaks:
+        code.update_jump(b, end_pos)
 
 
-    raise KeyError(f'Symbol {symbol} is not in the symbols table')
+def _statement_if(code: Code, statement):
+    condition = statement[1]
+    block = statement[2]
 
-def _generate_statement(code: Code, symbols, statement, loop_target: Optional[int] = None):
+    _expression(code, condition)
+    cond_pos = code.pos()
+    code.if_eq()
+
+    for s in block:
+        _statement(code, s)
+
+    end_pos = code.pos()
+    code.update_jump(cond_pos, end_pos)
+
+
+def _statement_if_else(code: Code, statement):
+    condition = statement[1]
+    if_block = statement[2]
+    else_block = statement[3]
+
+    _expression(code, condition)
+    cond_pos = code.pos()
+    code.if_eq()
+
+    for s in if_block:
+        _statement(code, s)
+
+    goto_pos = code.pos()
+    code.goto()
+
+    else_pos = code.pos()
+    for s in else_block:
+        _statement(code, s)
+
+    end_pos = code.pos()
+
+    code.update_jump(cond_pos, else_pos)
+    code.update_jump(goto_pos, end_pos)
+
+
+def _statement_return(code: Code, statement):
+    expression = statement[1]
+    t = statement[2]
+
+    if expression:
+        _expression(code, expression)
+
+    if t is None:
+        code.return_void()
+    elif isinstance(t, TypeInt):
+        code.return_int()
+    elif isinstance(t, TypeReal):
+        code.return_double()
+    elif isinstance(t, TypeBool):
+        code.return_int()
+    elif isinstance(t, TypeStr):
+        code.return_reference()
+    elif isinstance(t, TypeArray):
+        code.return_reference()
+
+def _statement_variable(code: Code, statement):
+
+
+def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: Optional[List[int]] = None):
     if statement[0] == Node.VARIABLE_DECLARATION:
         # TODO
         pass
@@ -64,31 +141,27 @@ def _generate_statement(code: Code, symbols, statement, loop_target: Optional[in
         # TODO
         pass
     elif statement[0] == Node.RETURN:
-        # TODO
-        pass
+        _statement_return(code, statement)
     elif statement[0] == Node.IF:
-        # TODO
-        pass
+        _statement_if(code, statement)
     elif statement[0] == Node.IF_ELSE:
-        # TODO
-        pass
+        _statement_if_else(code, statement)
     elif statement[0] == Node.WHILE:
-        # TODO
-        pass
+        _statement_while(code, statement)
     elif statement[0] == Node.BREAK:
-        # TODO
-        pass
+        break_pos = code.pos()
+        code.goto()
+        breaks.append(break_pos)
     elif statement[0] == Node.CONTINUE:
-        # TODO
-        pass
+        code.goto(loop_start)
     else:
         raise NotImplementedError()
 
 
 def _exp_uminus(code: Code, exp):
-    r = exp[1]
+    right = exp[1]
     t = exp[2]
-    _expression(code, r)
+    _expression(code, right)
 
     if isinstance(t, TypeInt):
         code.neg_int()
@@ -104,11 +177,11 @@ def _exp_uplus(code: Code, exp):
 
 
 def _exp_mul(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt):
         code.mul_int()
@@ -119,11 +192,11 @@ def _exp_mul(code: Code, exp):
 
 
 def _exp_div(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt):
         code.div_int()
@@ -134,11 +207,11 @@ def _exp_div(code: Code, exp):
 
 
 def _exp_plus(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt):
         code.add_int()
@@ -155,11 +228,11 @@ def _exp_plus(code: Code, exp):
 
 
 def _exp_minus(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt):
         code.sub_int()
@@ -170,11 +243,11 @@ def _exp_minus(code: Code, exp):
 
 
 def _exp_sub(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt):
         code.add_int()
@@ -191,12 +264,11 @@ def _exp_sub(code: Code, exp):
 
 
 def _exp_eq(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
-
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt) or isinstance(t, TypeBool) or isinstance(t, TypeReal):
         if isinstance(t, TypeReal):
@@ -226,11 +298,11 @@ def _exp_eq(code: Code, exp):
 
 
 def _exp_ne(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt) or isinstance(t, TypeBool) or isinstance(t, TypeReal):
         if isinstance(t, TypeReal):
@@ -260,11 +332,11 @@ def _exp_ne(code: Code, exp):
 
 
 def _exp_lt(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt) or isinstance(t, TypeReal):
         if isinstance(t, TypeReal):
@@ -288,11 +360,11 @@ def _exp_lt(code: Code, exp):
 
 
 def _exp_gt(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt) or isinstance(t, TypeReal):
         if isinstance(t, TypeReal):
@@ -316,11 +388,11 @@ def _exp_gt(code: Code, exp):
 
 
 def _exp_le(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt) or isinstance(t, TypeReal):
         if isinstance(t, TypeReal):
@@ -344,11 +416,11 @@ def _exp_le(code: Code, exp):
 
 
 def _exp_ge(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeInt) or isinstance(t, TypeReal):
         if isinstance(t, TypeReal):
@@ -393,11 +465,11 @@ def _exp_not(code: Code, exp):
 
 
 def _exp_and(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeBool):
         cmp1_pos = code.pos()
@@ -419,11 +491,11 @@ def _exp_and(code: Code, exp):
 
 
 def _exp_or(code: Code, exp):
-    l = exp[1]
-    r = exp[2]
+    left = exp[1]
+    right = exp[2]
     t = exp[3]
-    _expression(code, l)
-    _expression(code, r)
+    _expression(code, left)
+    _expression(code, right)
 
     if isinstance(t, TypeBool):
         cmp1_pos = code.pos()
@@ -506,7 +578,7 @@ def _generate_functions(cls: Class, functions):
 
         method = cls.method(name, method_desc)
         for s in statements:
-            _generate_statement(method.code, s)
+            _statement(method.code, s)
 
 
 def _generate_main(cls: Class, main_class_name: str):
