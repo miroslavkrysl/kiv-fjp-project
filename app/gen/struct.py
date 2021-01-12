@@ -2,15 +2,15 @@ from typing import Tuple, Dict
 
 from app.gen.code import Code
 from app.gen.constant import ConstantPool
-from app.gen.descriptor import MethodDescriptor, FieldDescriptor, IntDesc, LongDesc, FloatDesc, DoubleDesc, ObjectDesc, \
+from app.gen.descriptor import MethodDescriptor, FieldDescriptor, IntDesc, LongDesc, FloatDesc, DoubleDesc, ClassDesc, \
     ArrayDesc
 
 
 class Field:
     def __init__(self, name: str, descriptor: FieldDescriptor, constant_pool: ConstantPool):
         self._constant_pool = constant_pool
-        self._name_index: int = constant_pool.const_field_name(name)
-        self._descriptor_index: int = constant_pool.const_field_descriptor(descriptor)
+        self._name_index: int = constant_pool.field_name(name)
+        self._descriptor_index: int = constant_pool.field_descriptor(descriptor)
 
     @property
     def name_index(self):
@@ -24,8 +24,8 @@ class Field:
 class Method:
     def __init__(self, name: str, descriptor: MethodDescriptor, constant_pool: ConstantPool):
         self._constant_pool = constant_pool
-        self._name_index: int = constant_pool.const_method_name(name)
-        self._descriptor_index: int = constant_pool.const_method_descriptor(descriptor)
+        self._name_index: int = constant_pool.method_name(name)
+        self._descriptor_index: int = constant_pool.method_descriptor(descriptor)
         self._code: Code = Code(constant_pool)
 
         # setup local variables
@@ -38,7 +38,7 @@ class Method:
                 self._code.variable_float()
             elif isinstance(p, DoubleDesc):
                 self._code.variable_double()
-            elif isinstance(p, ObjectDesc) or isinstance(p, ArrayDesc):
+            elif isinstance(p, ClassDesc) or isinstance(p, ArrayDesc):
                 self._code.variable_reference()
 
     @property
@@ -57,7 +57,7 @@ class Method:
 class Class:
     def __init__(self, name):
         self._constant_pool = ConstantPool()
-        self._this_class: int = self._constant_pool.const_class(name)
+        self._this_class: int = self._constant_pool.class_ref(name)
         self._fields: Dict[Tuple[str, FieldDescriptor], Field] = {}
         self._methods: Dict[Tuple[str, MethodDescriptor], Method] = {}
 

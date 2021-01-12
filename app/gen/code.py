@@ -4,7 +4,8 @@ from typing import List, Optional, Any
 from app.gen.constant import JConst, JConstInt, JConstDouble, JConstString, JConstUtf8, JConstNameAndType, JConstClass, \
     JConstFieldRef, JConstMethodRef, ConstantPool
 from app.gen.descriptor import JOperandType, JOperandTypeInt, JOperandTypeLong, JOperandTypeFloat, JOperandTypeDouble, \
-    JOperandTypeReference, FieldDescriptor, MethodDescriptor
+    JOperandTypeReference, FieldDescriptor, MethodDescriptor, ArrayDesc, IntDesc, LongDesc, FloatDesc, DoubleDesc, \
+    ByteDesc, BooleanDesc, CharDesc, ShortDesc, ClassDesc
 from app.gen.opcode import Opcode
 from app.gen.util import is_byte, is_short
 
@@ -101,7 +102,7 @@ class Code:
         elif is_short(value):
             self._add_instruction(Opcode.SIPUSH, value)
         else:
-            index = self._constant_pool.const_int(value)
+            index = self._constant_pool.int(value)
             self._add_instruction(Opcode.LDC, index)
 
     def const_long(self, value: int):
@@ -114,7 +115,7 @@ class Code:
         elif value == 1:
             self._add_instruction(Opcode.LCONST_1)
         else:
-            index = self._constant_pool.const_long(value)
+            index = self._constant_pool.long(value)
             self._add_instruction(Opcode.LDC2_W, index)
 
     def const_float(self, value: float):
@@ -129,7 +130,7 @@ class Code:
         elif value == 2:
             self._add_instruction(Opcode.FCONST_2)
         else:
-            index = self._constant_pool.const_float(value)
+            index = self._constant_pool.float(value)
             self._add_instruction(Opcode.LDC, index)
 
     def const_double(self, value: float):
@@ -142,7 +143,7 @@ class Code:
         elif value == 1:
             self._add_instruction(Opcode.DCONST_1)
         else:
-            index = self._constant_pool.const_double(value)
+            index = self._constant_pool.double(value)
             self._add_instruction(Opcode.LDC, index)
 
     def const_string(self, value: str):
@@ -150,7 +151,7 @@ class Code:
         Push string constant reference onto the stack.
         :param value: The string value.
         """
-        index = self._constant_pool.const_string(value)
+        index = self._constant_pool.string(value)
         self._add_instruction(Opcode.LDC, index)
 
     def load_int(self, index: int):
@@ -749,64 +750,60 @@ class Code:
         self._add_instruction(Opcode.RETURN)
 
     def load_static_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
-        index = self._constant_pool.const_field_ref(class_name, name, descriptor)
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.GETSTATIC, index)
 
     def store_static_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
-        index = self._constant_pool.const_field_ref(class_name, name, descriptor)
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.PUTSTATIC, index)
 
     def load_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
-        index = self._constant_pool.const_field_ref(class_name, name, descriptor)
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.GETFIELD, index)
 
     def store_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
-        index = self._constant_pool.const_field_ref(class_name, name, descriptor)
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.PUTFIELD, index)
 
     def invoke_virtual(self, class_name: str, name: str, descriptor: MethodDescriptor):
-        index = self._constant_pool.const_method_ref(class_name, name, descriptor)
+        index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKEVIRTUAL, index)
 
     def invoke_special(self, class_name: str, name: str, descriptor: MethodDescriptor):
-        index = self._constant_pool.const_method_ref(class_name, name, descriptor)
+        index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKESPECIAL, index)
 
     def invoke_static(self, class_name: str, name: str, descriptor: MethodDescriptor):
-        index = self._constant_pool.const_method_ref(class_name, name, descriptor)
+        index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKESTATIC, index)
 
     def new(self, class_name: str):
-        index = self._constant_pool.const_class(class_name)
+        index = self._constant_pool.class_ref(class_name)
         self._add_instruction(Opcode.NEW, index)
 
-    def new_array_int(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.INT)
-
-    def new_array_long(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.LONG)
-
-    def new_array_float(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.FLOAT)
-
-    def new_array_double(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.DOUBLE)
-
-    def new_array_byte(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.BYTE)
-
-    def new_array_boolean(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.BOOLEAN)
-
-    def new_array_char(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.CHAR)
-
-    def new_array_short(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.SHORT)
-
-    def new_array_reference(self, class_name: str):
-        index = self._constant_pool.const_class(class_name)
-        self._add_instruction(Opcode.ANEWARRAY, index)
+    def new_array(self, inner_descriptor: FieldDescriptor):
+        if isinstance(inner_descriptor, IntDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.INT)
+        elif isinstance(inner_descriptor, LongDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.LONG)
+        elif isinstance(inner_descriptor, FloatDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.FLOAT)
+        elif isinstance(inner_descriptor, DoubleDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.DOUBLE)
+        elif isinstance(inner_descriptor, ByteDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.BYTE)
+        elif isinstance(inner_descriptor, BooleanDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.BOOLEAN)
+        elif isinstance(inner_descriptor, CharDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.CHAR)
+        elif isinstance(inner_descriptor, ShortDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.SHORT)
+        elif isinstance(inner_descriptor, ClassDesc):
+            index = self._constant_pool.class_ref(inner_descriptor.class_name)
+            self._add_instruction(Opcode.ANEWARRAY, index)
+        elif isinstance(inner_descriptor, ArrayDesc):
+            index = self._constant_pool.array_ref(inner_descriptor)
+            self._add_instruction(Opcode.ANEWARRAY, index)
 
     def array_length(self):
         self._add_instruction(Opcode.ARRAYLENGTH)

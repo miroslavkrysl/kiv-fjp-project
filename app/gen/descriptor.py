@@ -104,7 +104,7 @@ class LongDesc(BaseDescriptor):
         return 'long'
 
 
-class ObjectDesc(BaseDescriptor):
+class ClassDesc(BaseDescriptor):
     def __init__(self, class_name: str):
         self._class_name = class_name
 

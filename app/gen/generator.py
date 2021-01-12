@@ -1,13 +1,16 @@
 from typing import Optional, List, Dict
 
 from app.gen.code import Code
-from app.gen.descriptor import ArrayDesc, FieldDescriptor, IntDesc, DoubleDesc, BooleanDesc, ObjectDesc, \
+from app.gen.descriptor import ArrayDesc, FieldDescriptor, IntDesc, DoubleDesc, BooleanDesc, ClassDesc, \
     MethodDescriptor
 from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_MAIN_NAME, J_MAIN_DESCRIPTOR
 from app.gen.struct import Class
 from app.names import FN_MAIN, MAIN_PARAMS, MAIN_RETURN, BOOL_INT_FALSE, BOOL_INT_TRUE
 from app.types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
 from app.syntax import Node
+
+
+_variables: Dict[str, int] = {}
 
 
 def _create_field_descriptor(t: Type) -> FieldDescriptor:
@@ -18,7 +21,7 @@ def _create_field_descriptor(t: Type) -> FieldDescriptor:
     elif isinstance(t, TypeBool):
         return BooleanDesc()
     elif isinstance(t, TypeStr):
-        return ObjectDesc(JC_STRING)
+        return ClassDesc(JC_STRING)
     elif isinstance(t, TypeArray):
         if isinstance(t.inner, TypeInt):
             inner = IntDesc()
@@ -27,7 +30,7 @@ def _create_field_descriptor(t: Type) -> FieldDescriptor:
         elif isinstance(t.inner, TypeBool):
             inner = BooleanDesc()
         elif isinstance(t.inner, TypeStr):
-            inner = ObjectDesc(JC_STRING)
+            inner = ClassDesc(JC_STRING)
         else:
             raise NotImplementedError()
 
@@ -120,23 +123,98 @@ def _statement_return(code: Code, statement):
         code.return_reference()
     elif isinstance(t, TypeArray):
         code.return_reference()
+    else:
+        raise NotImplementedError()
 
-def _statement_variable(code: Code, statement):
+
+def _statement_var_def(code: Code, statement):
+    name = statement[1]
+    t = statement[2]
+    expression = statement[3]
+
+    _expression(code, expression)
+
+    if isinstance(t, TypeInt):
+        index = code.variable_int()
+        code.store_int(index)
+    elif isinstance(t, TypeReal):
+        index = code.variable_double()
+        code.store_double(index)
+    elif isinstance(t, TypeBool):
+        index = code.variable_int()
+        code.store_int(index)
+    elif isinstance(t, TypeStr):
+        index = code.variable_reference()
+        code.store_reference(index)
+    elif isinstance(t, TypeArray):
+        index = code.variable_reference()
+        code.store_reference(index)
+    else:
+        raise NotImplementedError()
+
+    _variables[name] = index
+
+
+def _statement_var_store(code: Code, exp):
+    name = exp[1]
+    expression = exp[2]
+    t = exp[3]
+
+    index = _variables[name]
+
+    _expression(code, expression)
+
+    if isinstance(t, TypeInt):
+        code.store_int(index)
+    if isinstance(t, TypeReal):
+        code.store_double(index)
+    if isinstance(t, TypeBool):
+        code.store_int(index)
+    if isinstance(t, TypeStr):
+        code.store_reference(index)
+    if isinstance(t, TypeArray):
+        code.store_reference(index)
+
+
+def _statement_array_store(code: Code, exp):
+    name = exp[1]
+    index_exps = exp[2]
+    expression = exp[3]
+    t = exp[4]
+
+    # top array load
+    index = _variables[name]
+    code.load_reference(index)
+
+    # subarrays load if multidim
+    for e in index_exps[:-1]:
+        _expression(code, e)
+        code.array_load_reference()
+
+    # item store
+    _expression(code, index_exps[-1])
+    _expression(code, expression)
+    if isinstance(t.inner, TypeInt):
+        code.array_store_int()
+    if isinstance(t.inner, TypeReal):
+        code.array_store_double()
+    if isinstance(t.inner, TypeBool):
+        code.array_store_boolean()
+    if isinstance(t.inner, TypeStr):
+        code.array_store_reference()
+    if isinstance(t.inner, TypeArray):
+        code.array_store_reference()
 
 
 def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: Optional[List[int]] = None):
-    if statement[0] == Node.VARIABLE_DECLARATION:
-        # TODO
-        pass
-    elif statement[0] == Node.VARIABLE_DEFINITION:
-        # TODO
-        pass
+    if statement[0] == Node.VARIABLE_DEFINITION:
+        _statement_var_def(code, statement)
     elif statement[0] == Node.CONSTANT_DEFINITION:
-        # TODO
-        pass
-    elif statement[0] == Node.STORE:
-        # TODO
-        pass
+        _statement_var_def(code, statement)
+    elif statement[0] == Node.VARIABLE_STORE:
+        _statement_var_store(code, statement)
+    elif statement[0] == Node.ARRAY_STORE:
+        _statement_array_store(code, statement)
     elif statement[0] == Node.FUNCTION_CALL:
         # TODO
         pass
@@ -516,6 +594,133 @@ def _exp_or(code: Code, exp):
         NotImplementedError()
 
 
+def _exp_var_load(code: Code, exp):
+    name = exp[1]
+    t = exp[2]
+
+    index = _variables[name]
+
+    if isinstance(t, TypeInt):
+        code.load_int(index)
+    if isinstance(t, TypeReal):
+        code.load_double(index)
+    if isinstance(t, TypeBool):
+        code.load_int(index)
+    if isinstance(t, TypeStr):
+        code.load_reference(index)
+    if isinstance(t, TypeArray):
+        code.load_reference(index)
+
+
+def _exp_array_load(code: Code, exp):
+    array_exp = exp[1]
+    index_exps = exp[2]
+    t = exp[3]
+
+    _expression(code, array_exp)
+
+    # subarrays load if multidim
+    for e in index_exps[:-1]:
+        _expression(code, e)
+        code.array_load_reference()
+
+    # item load
+    _expression(code, index_exps[-1])
+    if isinstance(t, TypeInt):
+        code.array_load_int()
+    if isinstance(t, TypeReal):
+        code.array_load_double()
+    if isinstance(t, TypeBool):
+        code.array_load_boolean()
+    if isinstance(t, TypeStr):
+        code.array_load_reference()
+    if isinstance(t, TypeArray):
+        code.array_load_reference()
+
+
+def _exp_value_array(code: Code, exp):
+    expressions = exp[1]
+    t = exp[2]
+
+    code.new_array(_create_field_descriptor(t.inner))
+
+    for (i, e) in enumerate(expressions):
+        code.dup()
+        code.const_int(i)
+        _expression(code, e)
+        if isinstance(t.inner, TypeInt):
+            code.array_store_int()
+        if isinstance(t.inner, TypeReal):
+            code.array_store_double()
+        if isinstance(t.inner, TypeBool):
+            code.array_store_boolean()
+        if isinstance(t.inner, TypeStr):
+            code.array_store_reference()
+        if isinstance(t.inner, TypeArray):
+            code.array_store_reference()
+
+
+def _exp_var_assign(code: Code, exp):
+    name = exp[1]
+    expression = exp[2]
+    t = exp[3]
+
+    index = _variables[name]
+
+    _expression(code, expression)
+
+    if isinstance(t, TypeInt):
+        code.dup()
+        code.store_int(index)
+    if isinstance(t, TypeReal):
+        code.dup2()
+        code.store_double(index)
+    if isinstance(t, TypeBool):
+        code.dup()
+        code.store_int(index)
+    if isinstance(t, TypeStr):
+        code.dup()
+        code.store_reference(index)
+    if isinstance(t, TypeArray):
+        code.dup()
+        code.store_reference(index)
+
+
+def _exp_array_assign(code: Code, exp):
+    name = exp[1]
+    index_exps = exp[2]
+    expression = exp[3]
+    t = exp[4]
+
+    # top array load
+    index = _variables[name]
+    code.load_reference(index)
+
+    # subarrays load if multidim
+    for e in index_exps[:-1]:
+        _expression(code, e)
+        code.array_load_reference()
+
+    # item store
+    _expression(code, index_exps[-1])
+    _expression(code, expression)
+    if isinstance(t.inner, TypeInt):
+        code.dup()
+        code.array_store_int()
+    if isinstance(t.inner, TypeReal):
+        code.dup2()
+        code.array_store_double()
+    if isinstance(t.inner, TypeBool):
+        code.dup()
+        code.array_store_boolean()
+    if isinstance(t.inner, TypeStr):
+        code.dup()
+        code.array_store_reference()
+    if isinstance(t.inner, TypeArray):
+        code.dup()
+        code.array_store_reference()
+
+
 def _expression(code: Code, expression):
     t = expression[1]
 
@@ -549,6 +754,24 @@ def _expression(code: Code, expression):
         _exp_and(code, expression)
     elif expression[0] == Node.OR:
         _exp_or(code, expression)
+    elif expression[0] == Node.VARIABLE_LOAD:
+        _exp_var_load(code, expression)
+    elif expression[0] == Node.ARRAY_LOAD:
+        _exp_array_load(code, expression)
+    elif expression[0] == Node.VARIABLE_ASSIGNMENT:
+        _exp_var_assign(code, expression)
+    elif expression[0] == Node.ARRAY_ASSIGNMENT:
+        _exp_array_assign(code, expression)
+    elif expression[0] == Node.VALUE_INT:
+        code.const_int(expression[1])
+    elif expression[0] == Node.VALUE_REAL:
+        code.const_double(expression[1])
+    elif expression[0] == Node.VALUE_BOOL:
+        code.const_int(int(expression[1]))
+    elif expression[0] == Node.VALUE_STR:
+        code.const_string(expression[1])
+    elif expression[0] == Node.VALUE_ARRAY:
+        _exp_value_array(expression)
     else:
         raise NotImplementedError()
 
@@ -569,6 +792,8 @@ def _generate_clinit(cls: Class, constants):
 
 def _generate_functions(cls: Class, functions):
     for f in functions:
+        _variables.clear()
+
         name = f[1]
         params = f[2]
         ret = f[3]

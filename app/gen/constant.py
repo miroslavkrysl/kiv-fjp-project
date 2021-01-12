@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Dict
 
-from app.gen.descriptor import MethodDescriptor, FieldDescriptor
+from app.gen.descriptor import MethodDescriptor, FieldDescriptor, ArrayDesc, ClassDesc
 from app.gen.util import is_int, is_long
 
 
@@ -150,52 +150,58 @@ class ConstantPool:
 
         return index
 
-    def const_class(self, class_name: str) -> int:
-        name_index = self._add(JConstUtf8(class_name))
+    def class_ref(self, class_name: str) -> int:
+        class_name = ClassDesc(class_name)
+        name_index = self._add(JConstUtf8(class_name.utf8()))
         class_index = self._add(JConstClass(name_index))
         return class_index
 
-    def const_field_name(self, name: str) -> int:
+    def array_ref(self, descriptor: ArrayDesc) -> int:
+        name_index = self._add(JConstUtf8(descriptor.utf8()))
+        class_index = self._add(JConstClass(name_index))
+        return class_index
+
+    def field_name(self, name: str) -> int:
         return self._add(JConstUtf8(name))
 
-    def const_field_descriptor(self, descriptor: FieldDescriptor) -> int:
+    def field_descriptor(self, descriptor: FieldDescriptor) -> int:
         return self._add(JConstUtf8(descriptor.utf8()))
 
-    def const_field_ref(self, class_name: str, name: str, descriptor: FieldDescriptor) -> int:
-        class_index = self.const_class(class_name)
-        name_index = self.const_field_name(name)
-        descriptor_index = self.const_field_descriptor(descriptor)
+    def field_ref(self, class_name: str, name: str, descriptor: FieldDescriptor) -> int:
+        class_index = self.class_ref(class_name)
+        name_index = self.field_name(name)
+        descriptor_index = self.field_descriptor(descriptor)
         name_and_type_index = self._add(JConstNameAndType(name_index, descriptor_index))
         field_index = self._add(JConstMethodRef(class_index, name_and_type_index))
         return field_index
 
-    def const_method_name(self, name: str) -> int:
+    def method_name(self, name: str) -> int:
         return self._add(JConstUtf8(name))
 
-    def const_method_descriptor(self, descriptor: MethodDescriptor) -> int:
+    def method_descriptor(self, descriptor: MethodDescriptor) -> int:
         return self._add(JConstUtf8(descriptor.utf8()))
 
-    def const_method_ref(self, class_name: str, name: str, descriptor: MethodDescriptor) -> int:
-        class_index = self.const_class(class_name)
-        name_index = self.const_method_name(name)
-        descriptor_index = self.const_method_descriptor(descriptor)
+    def method_ref(self, class_name: str, name: str, descriptor: MethodDescriptor) -> int:
+        class_index = self.class_ref(class_name)
+        name_index = self.method_name(name)
+        descriptor_index = self.method_descriptor(descriptor)
         name_and_type_index = self._add(JConstNameAndType(name_index, descriptor_index))
         method_index = self._add(JConstMethodRef(class_index, name_and_type_index))
         return method_index
 
-    def const_int(self, value: int) -> int:
+    def int(self, value: int) -> int:
         return self._add(JConstInt(value))
 
-    def const_long(self, value: int) -> int:
+    def long(self, value: int) -> int:
         return self._add(JConstLong(value))
 
-    def const_float(self, value: float) -> int:
+    def float(self, value: float) -> int:
         return self._add(JConstFloat(value))
 
-    def const_double(self, value: float) -> int:
+    def double(self, value: float) -> int:
         return self._add(JConstDouble(value))
 
-    def const_string(self, value: str) -> int:
+    def string(self, value: str) -> int:
         utf8_index = self._add(JConstUtf8(value))
         string_index = self._add(JConstString(utf8_index))
         return string_index
