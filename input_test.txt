@@ -6,6 +6,7 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
     var hoj: Str = "gsd";
     var joh: Int;
     var arra: [Int];
+    var bb: [[Int]];
     const konstanta: Int = 14;
 
     if hello == konstanta & true {
@@ -13,7 +14,9 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
     }
     else {
         hell();
-        arra = [5,5];
+        arra = [];
+        arra = [5,4];
+	bb = [[7], []];
     }
 
     while true {

@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import List, Optional
 
-from app.types import BaseType
+from app._types import BaseType
 
 
 # --- Java operand types ---

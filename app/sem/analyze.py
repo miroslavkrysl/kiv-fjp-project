@@ -1,5 +1,5 @@
 # Here goes AST analyze process
-from app.syntax import Node
+from app.syntax.ast import Node
 
 sem_var_def = {}  # Key = depth, Value => Key = identifier, Value = (AST definition type tuple, is constant)
 sem_func_def = {}  # Key = identifier, Value = tuple (AST parameter list of type tuples, AST return type tuple)
@@ -8,7 +8,7 @@ sem_errors = []
 
 def analyze(ast):
     print("ANALYZING THE INPUT...")
-    _analyze_layer(ast, 0, False, False)
+    _analyze_layer(ast[1], 0, False, False)
 
     # Print errors
     if len(sem_errors) > 0:
@@ -26,6 +26,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
     # Go through all the items and register all the functions first in the root (depth-0)
     if depth == 0:
         for item in items:
+            print(item)
             if item[0] == Node.FUNCTION_DEFINITION:
                 if not _is_identifier_free(item[1], depth):
                     sem_errors.append("Identifier '{1}' is already taken. Depth: {0}".format(depth, item[1]))
@@ -48,7 +49,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
             if not _is_identifier_free(item[1], depth):
                 sem_errors.append("Identifier '{1}' is already taken. Depth: {0}".format(depth, item[1]))
                 break
-            if not _is_value_match_type(item[2], item[3]):
+            if not _is_value_match_type(item[2], item[3], None):
                 sem_errors.append(
                     "Type of assigned value does not match ({1} to {2}). Depth: {0}".format(depth, item[3], item[2]))
                 break
@@ -63,7 +64,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
             if expr_type[0] is None:
                 sem_errors.append("Expression is invalid: {1}. Depth: {0}".format(depth, item[3]))
                 break
-            if item[2] != expr_type:
+            if item[2] != expr_type and not (expr_type[0] == Node.TYPE_ARRAY and expr_type[2][0] is None):
                 sem_errors.append("Type of assigned value does not match ({1} to {2}). Depth: {0}".format(depth, item[3], item[2]))
                 break
             sem_var_def[depth][item[1]] = (item[2], False)
@@ -76,7 +77,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
             sem_var_def[depth][item[1]] = (item[2], False)
 
         # Variable assign
-        elif item[0] == Node.VARIABLE_ASSIGN:
+        elif item[0] == Node.VARIABLE_STORE:
             v = _get_var(item[1])
             if v is None:
                 sem_errors.append("Assigning value to undefined variable '{1}'. Depth: {0}".format(depth, item[1]))
@@ -88,7 +89,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
             if expr_type[0] is None:
                 sem_errors.append("Expression is invalid: {1}. Depth: {0}".format(depth, item[2]))
                 break
-            if v[0] != expr_type:
+            if v[0] != expr_type and not (expr_type[0] == Node.TYPE_ARRAY and expr_type[2][0] is None):
                 sem_errors.append("Type of assigned value does not match ({1} to {2}). Depth: {0}".format(depth, item[2], v[0]))
                 break
 
@@ -183,7 +184,6 @@ def _is_identifier_free(identifier, depth):
 
 def _validate_expression(texpression):
     """
-    TODO: not working yet
     Validate expression
     :param texpression: The expression
     :return: Type tuple or None on failure
@@ -223,7 +223,7 @@ def _validate_expression(texpression):
             return ret1
         else:
             return (None,)
-    elif texpression[0] == Node.VARIABLE_VALUE:
+    elif texpression[0] == Node.VARIABLE_LOAD:
         v = _get_var(texpression[1])
         if v is None:
             sem_errors.append("Variable '{0}' does not exist.".format(texpression[1]))
@@ -231,10 +231,22 @@ def _validate_expression(texpression):
         else:
             return v[0]
     elif texpression[0] == Node.VALUE_ARRAY:
+        dim = 1
         if len(texpression[1]) > 0:
-            return (_value_to_type(texpression[0]), _validate_expression(texpression[1][0]))
+            subexpr = texpression[1][0]
+            while True:
+                if subexpr[0] == Node.VALUE_ARRAY:
+                    dim += 1
+                    if len(subexpr[1]) > 0:
+                        subexpr = subexpr[1][0]
+                    else:
+                        subexpr = (None,)  # Empty array
+                else:
+                    break
+
+            return (_value_to_type(texpression[0]), dim, (_value_to_type(subexpr[0]),))
         else:
-            return (_value_to_type(texpression[0]),)  # Empty array TODO: Needs to be solved - empty arrays are not recognized
+            return (_value_to_type(texpression[0]), dim, (None,))  # Empty array
     else:
         return (_value_to_type(texpression[0]),)
 
@@ -259,21 +271,30 @@ def _value_to_type(value):
         return None
 
 
-def _is_value_match_type(ttype, tvalue):
+def _is_value_match_type(ttype, tvalue, dim):
     """
     Check if the AST tuple type matches with AST tuple value
     :param ttype: The AST tuple type
     :param tvalue: The AST tuple value
     :return: True = matches, False otherwise
     """
+    if dim is None:
+        dim = 1
+
     if (ttype[0] == Node.TYPE_INT and tvalue[0] == Node.VALUE_INT) \
             or (ttype[0] == Node.TYPE_REAL and tvalue[0] == Node.VALUE_REAL) \
             or (ttype[0] == Node.TYPE_ARRAY and tvalue[0] == Node.VALUE_ARRAY) \
             or (ttype[0] == Node.TYPE_BOOL and tvalue[0] == Node.VALUE_BOOL) \
             or (ttype[0] == Node.TYPE_STR and tvalue[0] == Node.VALUE_STR):
         # Check if there is any more type to check in deep...
-        if len(ttype) > 1 and type(tvalue[1]) == tuple:
-            return _is_value_match_type(ttype[1], tvalue[1])
+        if ttype[0] == Node.TYPE_ARRAY:
+            if len(tvalue[1]) > 0 and tvalue[1][0][0] == Node.VALUE_ARRAY:
+                return _is_value_match_type(ttype, tvalue[1][0], dim + 1)
+            else:
+                if ttype[1] == dim:
+                    return True
+                else:
+                    return False
         # Or if we are sure there is no more types to check...
         elif len(ttype) == 1 and type(tvalue[1]) != tuple:
             return True
@@ -294,7 +315,7 @@ def _is_func_parameters_match(lval, ldef):
         return False
     i = 0
     for v in lval:
-        if not _is_value_match_type(ldef[i][1], v):
+        if not _is_value_match_type(ldef[i][1], v, None):
             return False
         i += 1
     return True

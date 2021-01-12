@@ -45,7 +45,7 @@ def main():
     result = parser.parse(data, lexer=lexer, tracking=True)
 
     print_tree(result)
-    # app.sem.analyze.analyze(result)
+    app.sem.analyze(result)
 
 
 if __name__ == '__main__':

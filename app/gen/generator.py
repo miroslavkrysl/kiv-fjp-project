@@ -1,7 +1,7 @@
 from app.gen.code import CodeBuilder
 from app.gen.descriptor import ArrayDesc
 from app.gen.predefined import JAVA_STRING_CLASS
-from app.types import TypeInt, TypeReal, TypeBool, TypeStr
+from app._types import TypeInt, TypeReal, TypeBool, TypeStr
 from app.syntax import Node
 
 
