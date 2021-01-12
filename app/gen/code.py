@@ -34,7 +34,7 @@ class Code:
         self._locals.append(variable_type)
         return len(self._locals) - 1
 
-    def label(self) -> int:
+    def pos(self) -> int:
         """
         The index of the next added instruction.
         It can be used later for jump instruction.
@@ -647,10 +647,10 @@ class Code:
     def cmp_float_gt(self):
         self._add_instruction(Opcode.FCMPG)
 
-    def cmp_double_lt(self):
+    def cmp_double_l(self):
         self._add_instruction(Opcode.DCMPL)
 
-    def cmp_double_gt(self):
+    def cmp_double_g(self):
         self._add_instruction(Opcode.DCMPG)
 
     def if_eq(self, index: Optional[int] = None):
