@@ -15,7 +15,6 @@ class Node(Enum):
     CONTINUE = auto()
 
     # Operators
-    INDEX = auto()
     UMINUS = auto()
     UPLUS = auto()
     MUL = auto()
@@ -52,7 +51,6 @@ class Node(Enum):
     ARRAY_LOAD = auto()
     VARIABLE_ASSIGNMENT = auto()
     ARRAY_ASSIGNMENT = auto()
-    VARIABLE_DECLARATION = auto()
     VARIABLE_DEFINITION = auto()
     CONSTANT_DEFINITION = auto()
 

@@ -29,7 +29,6 @@ def p_program(p):
 def p_statements(p):
     """
     statements  :
-                | statements variable_declaration SEMICOLON
                 | statements variable_definition SEMICOLON
                 | statements constant_definition SEMICOLON
                 | statements store SEMICOLON
@@ -56,6 +55,8 @@ def p_function_definition(p):
     """
     ret = None if len(p) == 9 else p[7]
     statements = p[7] if len(p) == 9 else p[9]
+
+    # (node, name, [parameters], return, [statements])
     p[0] = (Node.FUNCTION_DEFINITION, p[2], p[4], ret, statements)
 
 
@@ -382,13 +383,6 @@ def p_or(p):
 
 # --- Variables ---
 
-def p_variable_declaration(p):
-    """
-    variable_declaration    : VAR IDENTIFIER COLON type
-    """
-    p[0] = (Node.VARIABLE_DECLARATION, p[2], p[4])
-
-
 def p_variable_definition(p):
     """
     variable_definition : VAR IDENTIFIER COLON type ASSIGN expression
@@ -400,6 +394,7 @@ def p_constant_definition(p):
     """
     constant_definition : CONST IDENTIFIER COLON type ASSIGN expression
     """
+    # (node, name, type, expression)
     p[0] = (Node.CONSTANT_DEFINITION, p[2], p[4], p[6])
 
 
