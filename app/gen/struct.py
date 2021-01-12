@@ -42,15 +42,15 @@ class Method:
                 self._code.variable_reference()
 
     @property
-    def name_index(self):
+    def name_index(self) -> int:
         return self._name_index
 
     @property
-    def descriptor_index(self):
+    def descriptor_index(self) -> int:
         return self._descriptor_index
 
     @property
-    def code(self):
+    def code(self) -> Code:
         return self.code
 
 

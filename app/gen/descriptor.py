@@ -1,8 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import List, Optional
 
-from app.types import BaseType
-
 
 # --- Java operand types ---
 
@@ -28,49 +26,6 @@ class JOperandTypeDouble(JOperandType):
 
 class JOperandTypeReference(JOperandType):
     pass
-
-
-# # --- Java names ---
-#
-# class ObjectName(ABC):
-#     @abstractmethod
-#     def utf8(self):
-#         pass
-#
-#
-# class ClassName(ObjectName):
-#     def __init__(self, name: str):
-#         self.name = name
-#
-#     def utf8(self):
-#         return f'[L{self.name};'
-#
-#
-# class FieldName:
-#     def __init__(self, name: str):
-#         self.name = name
-#
-#     def utf8(self):
-#         return self.name
-#
-#
-# class MethodName:
-#     INIT_METHOD = '<init>'
-#     CLASS_INIT_METHOD = '<clinit>'
-#
-#     def __init__(self, name: str):
-#         self.name = name
-#
-#     @classmethod
-#     def new_init(cls):
-#         cls(cls.INIT_METHOD)
-#
-#     @classmethod
-#     def new_class_init(cls):
-#         cls(cls.CLASS_INIT_METHOD)
-#
-#     def utf8(self):
-#         return self.name
 
 
 # --- Java type descriptors ---
@@ -192,17 +147,17 @@ class BooleanDesc(BaseDescriptor):
 
 
 class ArrayDesc(FieldDescriptor):
-    def __init__(self, dim, inner):
+    def __init__(self, dim: int, inner: BaseDescriptor):
         assert 1 <= dim <= 255
         self._dim: int = dim
         self._inner: BaseDescriptor = inner
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         return self._dim
 
     @property
-    def inner(self):
+    def inner(self) -> BaseDescriptor:
         return self._inner
 
     def utf8(self) -> str:
@@ -237,7 +192,7 @@ class MethodDescriptor(Descriptor):
 
     def utf8(self) -> str:
         return '({0}){1}'.format(''.join(map(lambda d: d.utf8(), self._params_descriptors)),
-                                 self._return_descriptor.utf8())
+                                 'V' if self._return_descriptor is None else self._return_descriptor.utf8())
 
     def __str__(self):
         return '{0} ({1})'.format(self._return_descriptor, ', '.join(map(lambda p: str(p), self._params_descriptors)))
