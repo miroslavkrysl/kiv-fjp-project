@@ -206,6 +206,36 @@ def _statement_array_store(code: Code, exp):
         code.array_store_reference()
 
 
+def _statement_function_call(code: Code, exp):
+    name = exp[1]
+    index_exps = exp[2]
+    expression = exp[3]
+    t = exp[4]
+
+    # top array load
+    index = _variables[name]
+    code.load_reference(index)
+
+    # subarrays load if multidim
+    for e in index_exps[:-1]:
+        _expression(code, e)
+        code.array_load_reference()
+
+    # item store
+    _expression(code, index_exps[-1])
+    _expression(code, expression)
+    if isinstance(t.inner, TypeInt):
+        code.array_store_int()
+    if isinstance(t.inner, TypeReal):
+        code.array_store_double()
+    if isinstance(t.inner, TypeBool):
+        code.array_store_boolean()
+    if isinstance(t.inner, TypeStr):
+        code.array_store_reference()
+    if isinstance(t.inner, TypeArray):
+        code.array_store_reference()
+
+
 def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: Optional[List[int]] = None):
     if statement[0] == Node.VARIABLE_DEFINITION:
         _statement_var_def(code, statement)
@@ -216,8 +246,7 @@ def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: 
     elif statement[0] == Node.ARRAY_STORE:
         _statement_array_store(code, statement)
     elif statement[0] == Node.FUNCTION_CALL:
-        # TODO
-        pass
+        _statement_function_call(code, statement)
     elif statement[0] == Node.RETURN:
         _statement_return(code, statement)
     elif statement[0] == Node.IF:
@@ -642,7 +671,12 @@ def _exp_value_array(code: Code, exp):
     expressions = exp[1]
     t = exp[2]
 
-    code.new_array(_create_field_descriptor(t.inner))
+    if t.dim > 1:
+        desc = _create_field_descriptor(TypeArray(t.dim - 1, t.inner))
+    else:
+        desc = _create_field_descriptor(t.inner)
+
+    code.new_array(desc)
 
     for (i, e) in enumerate(expressions):
         code.dup()
