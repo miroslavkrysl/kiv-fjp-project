@@ -4,9 +4,9 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
     call(41, 23, "string");
 
     var hoj: Str = "gsd";
-    var joh: Int;
-    var arra: [Int];
-    var bb: [[Int]];
+    var joh: Int = -5;
+    var arra: [Int] = [];
+    var bb: [[Int]] = [[], []];
     const konstanta: Int = 14;
 
     if hello == konstanta & true {

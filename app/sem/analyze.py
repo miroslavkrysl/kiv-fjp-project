@@ -41,6 +41,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
         # Function definition
         if item[0] == Node.FUNCTION_DEFINITION:
             _analyze_layer(item[4], depth + 1, True, loop_ins)
+            sem_var_def.pop(depth + 1, None)  # Remove the deeper level upon returning back
             if len(sem_errors) > 0:
                 break
 
@@ -70,11 +71,11 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
             sem_var_def[depth][item[1]] = (item[2], False)
 
         # Variable declaration
-        elif item[0] == Node.VARIABLE_DECLARATION:
-            if not _is_identifier_free(item[1], depth):
-                sem_errors.append("Identifier '{1}' is already taken. Depth: {0}".format(depth, item[1]))
-                break
-            sem_var_def[depth][item[1]] = (item[2], False)
+        # elif item[0] == Node.VARIABLE_DECLARATION:
+        #     if not _is_identifier_free(item[1], depth):
+        #         sem_errors.append("Identifier '{1}' is already taken. Depth: {0}".format(depth, item[1]))
+        #         break
+        #     sem_var_def[depth][item[1]] = (item[2], False)
 
         # Variable assign
         elif item[0] == Node.VARIABLE_STORE:
@@ -113,6 +114,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
                 sem_errors.append("Expression does not return bool: {1}. Depth: {0}".format(depth, item[1]))
                 break
             _analyze_layer(item[2], depth + 1, func_ins, loop_ins)
+            sem_var_def.pop(depth + 1, None)  # Remove the deeper level upon returning back
             if len(sem_errors) > 0:
                 break
 
@@ -126,9 +128,11 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
                 sem_errors.append("Expression does not return bool: {1}. Depth: {0}".format(depth, item[1]))
                 break
             _analyze_layer(item[2], depth + 1, func_ins, loop_ins)
+            sem_var_def.pop(depth + 1, None)  # Remove the deeper level upon returning back
             if len(sem_errors) > 0:
                 break
             _analyze_layer(item[3], depth + 1, func_ins, loop_ins)
+            sem_var_def.pop(depth + 1, None)  # Remove the deeper level upon returning back
             if len(sem_errors) > 0:
                 break
 
@@ -142,6 +146,7 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
                 sem_errors.append("Expression does not return bool: {1}. Depth: {0}".format(depth, item[1]))
                 break
             _analyze_layer(item[2], depth + 1, func_ins, True)
+            sem_var_def.pop(depth + 1, None)  # Remove the deeper level upon returning back
             if len(sem_errors) > 0:
                 break
 
@@ -182,47 +187,69 @@ def _is_identifier_free(identifier, depth):
     return True
 
 
+# def _struct_expression(texpression):
+#     pass
+
+
 def _validate_expression(texpression):
     """
     Validate expression
     :param texpression: The expression
     :return: Type tuple or None on failure
     """
-    if texpression[0] == Node.UPLUS \
-            or texpression[0] == Node.UMINUS \
-            or texpression[0] == Node.MUL \
+    if texpression[0] == Node.MUL \
             or texpression[0] == Node.DIV \
-            or texpression[0] == Node.PLUS \
             or texpression[0] == Node.MINUS:
         ret1 = _validate_expression(texpression[1])
         ret2 = _validate_expression(texpression[2])
-        if ret1 == ret2 and ret1 is not None and ret1[0] != Node.TYPE_ARRAY and ret1[0] != Node.TYPE_BOOL:
+        if ret1 == ret2 and ret1 is not None \
+                and ret1[0] != Node.TYPE_ARRAY and ret1[0] != Node.TYPE_STR and ret1[0] != Node.TYPE_BOOL:
             return ret1
         else:
             return (None,)
+
+    elif texpression[0] == Node.PLUS:
+        ret1 = _validate_expression(texpression[1])
+        ret2 = _validate_expression(texpression[2])
+        if ret1 == ret2 and ret1 is not None and ret1[0] != Node.TYPE_BOOL:
+            return ret1
+        else:
+            return (None,)
+
+    elif texpression[0] == Node.UPLUS \
+            or texpression[0] == Node.UMINUS:
+        return (_value_to_type(texpression[1][0]),)
+
     elif texpression[0] == Node.EQ \
-            or texpression[0] == Node.NE \
-            or texpression[0] == Node.LT \
+            or texpression[0] == Node.NE:
+        ret1 = _validate_expression(texpression[1])
+        ret2 = _validate_expression(texpression[2])
+        if ret1 == ret2:
+            return (Node.TYPE_BOOL,)
+        else:
+            return (None,)
+
+    elif texpression[0] == Node.LT \
             or texpression[0] == Node.GT \
             or texpression[0] == Node.LE \
             or texpression[0] == Node.GE:
         ret1 = _validate_expression(texpression[1])
         ret2 = _validate_expression(texpression[2])
-        if ret1 == ret2 and ret1 is not None and ret1[0] != Node.TYPE_ARRAY \
-                and (ret1[0] == Node.TYPE_INT or ret1[0] == Node.TYPE_REAL):
+        if ret1 == ret2 and ret1 is not None and (ret1[0] == Node.TYPE_INT or ret1[0] == Node.TYPE_REAL):
             return (Node.TYPE_BOOL,)
         else:
             return (None,)
+
     elif texpression[0] == Node.NOT \
             or texpression[0] == Node.AND \
             or texpression[0] == Node.OR:
         ret1 = _validate_expression(texpression[1])
         ret2 = _validate_expression(texpression[2])
-        if ret1 == ret2 and ret1 is not None and ret1[0] != Node.TYPE_ARRAY \
-                and ret1[0] == Node.TYPE_BOOL:
+        if ret1 == ret2 and ret1 is not None and ret1[0] == Node.TYPE_BOOL:
             return ret1
         else:
             return (None,)
+
     elif texpression[0] == Node.VARIABLE_LOAD:
         v = _get_var(texpression[1])
         if v is None:
@@ -230,6 +257,7 @@ def _validate_expression(texpression):
             return (None,)
         else:
             return v[0]
+
     elif texpression[0] == Node.VALUE_ARRAY:
         dim = 1
         if len(texpression[1]) > 0:
@@ -247,6 +275,7 @@ def _validate_expression(texpression):
             return (_value_to_type(texpression[0]), dim, (_value_to_type(subexpr[0]),))
         else:
             return (_value_to_type(texpression[0]), dim, (None,))  # Empty array
+
     else:
         return (_value_to_type(texpression[0]),)
 
