@@ -1,10 +1,13 @@
 from enum import Enum
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 
-from app.gen.const import JConst, JConstInt, JConstDouble, JConstString, JConstUtf8, JConstNameAndType, JConstClass, \
-    JConstField, JConstMethod
+from app.gen.constant import JConst, JConstInt, JConstDouble, JConstString, JConstUtf8, JConstNameAndType, JConstClass, \
+    JConstFieldRef, JConstMethodRef, ConstantPool
+from app.gen.descriptor import JOperandType, JOperandTypeInt, JOperandTypeLong, JOperandTypeFloat, JOperandTypeDouble, \
+    JOperandTypeReference, FieldDescriptor, MethodDescriptor, ArrayDesc, IntDesc, LongDesc, FloatDesc, DoubleDesc, \
+    ByteDesc, BooleanDesc, CharDesc, ShortDesc, ClassDesc
 from app.gen.opcode import Opcode
-from app.sem.types import JType
+from app.gen.util import is_byte, is_short
 
 
 class ArrayType(Enum):
@@ -18,49 +21,64 @@ class ArrayType(Enum):
     LONG = 11
 
 
-class CodeBuilder:
+class Code:
 
-    def __init__(self):
-        self._constants = {}
+    def __init__(self, constant_pool: ConstantPool):
+        self._constant_pool = constant_pool
         self._instructions: List[Any] = []
-        self._locals: List[JType] = []
+        self._locals: List[JOperandType] = []
+        self._stack_diffs: Dict[int, int] = {}
+
+    @property
+    def instructions(self):
+        return self._instructions
+
+    @property
+    def locals(self) -> List[JOperandType]:
+        return self._locals
+
+    @property
+    def constant_pool(self) -> ConstantPool:
+        return self._constant_pool
+
+    def instruction_length(self, index: int):
+        """
+        The length of the instruction.
+        :param index: The index of the instruction
+        :return: Length in bytes.
+        """
+        instruction = self._instructions[index]
+
+        if instruction[0].length is not None:
+            return instruction[0].length
+
+        raise NotImplementedError()
+
+    def instruction_stack_diff(self, index: int):
+        """
+        The stack size difference after execution of the instruction.
+        :param index: The index of the instruction.
+        :return: Difference in words.
+        """
+        instruction = self._instructions[index]
+
+        if instruction[0].stack_diff is not None:
+            return instruction[0].stack_diff
+
+        return self._stack_diffs[index]
+
+    def _set_stack_diff(self, diff: int):
+        pos = self.pos()
+        self._stack_diffs[pos] = diff
 
     def _add_instruction(self, opcode: Opcode, *args):
         self._instructions.append((opcode, *args))
 
-    def _add_const(self, const: JConst) -> int:
-        index = self._constants.get(const)
+    def _add_variable(self, variable_type: JOperandType) -> int:
+        self._locals.append(variable_type)
+        return len(self._locals) - 1
 
-        if index is None:
-            index = len(self._constants)
-            self._constants[const] = index
-
-        return index
-
-    def _add_const_class(self, class_name: str) -> int:
-        name_index = self._add_const(JConstUtf8(class_name))
-        index = self._add_const(JConstClass(name_index))
-        return index
-
-    def _add_const_name_and_type(self, name: str, descriptor: str) -> int:
-        name_index = self._add_const(JConstUtf8(name))
-        descriptor_index = self._add_const(JConstUtf8(descriptor))
-        index = self._add_const(JConstNameAndType(name_index, descriptor_index))
-        return index
-
-    def _add_const_field(self, class_name: str, name: str, descriptor: str) -> int:
-        class_index = self._add_const_class(class_name)
-        name_and_type_index = self._add_const_name_and_type(name, descriptor)
-        index = self._add_const(JConstField(class_index, name_and_type_index))
-        return index
-
-    def _add_const_method(self, class_name: str, name: str, descriptor: str) -> int:
-        class_index = self._add_const_class(class_name)
-        name_and_type_index = self._add_const_name_and_type(name, descriptor)
-        index = self._add_const(JConstMethod(class_index, name_and_type_index))
-        return index
-
-    def label(self) -> int:
+    def pos(self) -> int:
         """
         The index of the next added instruction.
         It can be used later for jump instruction.
@@ -68,18 +86,44 @@ class CodeBuilder:
         """
         return len(self._instructions)
 
-    def variable(self, variable_type: JType) -> int:
+    def variable_int(self) -> int:
         """
-        Create a local variable.
-        :param variable_type: The type of the local variable.
+        Create a local int variable.
         :return: The index of the variable.
         """
-        self._locals.append(variable_type)
-        return len(self._constants) - 1
+        return self._add_variable(JOperandTypeInt())
+
+    def variable_long(self) -> int:
+        """
+        Create a local long variable.
+        :return: The index of the variable.
+        """
+        return self._add_variable(JOperandTypeLong())
+
+    def variable_float(self) -> int:
+        """
+        Create a local float variable.
+        :return: The index of the variable.
+        """
+        return self._add_variable(JOperandTypeFloat())
+
+    def variable_double(self) -> int:
+        """
+        Create a local double variable.
+        :return: The index of the variable.
+        """
+        return self._add_variable(JOperandTypeDouble())
+
+    def variable_reference(self) -> int:
+        """
+        Create a local reference variable.
+        :return: The index of the variable.
+        """
+        return self._add_variable(JOperandTypeReference())
 
     def const_int(self, value: int):
         """
-        Push integer constant onto the stack.
+        Push int constant onto the stack.
         :param value: The integer value.
         """
         if value == -1:
@@ -96,8 +140,40 @@ class CodeBuilder:
             self._add_instruction(Opcode.ICONST_4)
         elif value == 5:
             self._add_instruction(Opcode.ICONST_5)
+        elif is_byte(value):
+            self._add_instruction(Opcode.BIPUSH, value)
+        elif is_short(value):
+            self._add_instruction(Opcode.SIPUSH, value)
         else:
-            index = self._add_const(JConstInt(value))
+            index = self._constant_pool.int(value)
+            self._add_instruction(Opcode.LDC, index)
+
+    def const_long(self, value: int):
+        """
+        Push long constant onto the stack.
+        :param value: The long value.
+        """
+        if value == 0:
+            self._add_instruction(Opcode.LCONST_0)
+        elif value == 1:
+            self._add_instruction(Opcode.LCONST_1)
+        else:
+            index = self._constant_pool.long(value)
+            self._add_instruction(Opcode.LDC2_W, index)
+
+    def const_float(self, value: float):
+        """
+        Push float constant onto the stack.
+        :param value: The float value.
+        """
+        if value == 0:
+            self._add_instruction(Opcode.FCONST_0)
+        elif value == 1:
+            self._add_instruction(Opcode.FCONST_1)
+        elif value == 2:
+            self._add_instruction(Opcode.FCONST_2)
+        else:
+            index = self._constant_pool.float(value)
             self._add_instruction(Opcode.LDC, index)
 
     def const_double(self, value: float):
@@ -110,7 +186,7 @@ class CodeBuilder:
         elif value == 1:
             self._add_instruction(Opcode.DCONST_1)
         else:
-            index = self._add_const(JConstDouble(value))
+            index = self._constant_pool.double(value)
             self._add_instruction(Opcode.LDC, index)
 
     def const_string(self, value: str):
@@ -118,8 +194,7 @@ class CodeBuilder:
         Push string constant reference onto the stack.
         :param value: The string value.
         """
-        index = self._add_const(JConstUtf8(value))
-        index = self._add_const(JConstString(index))
+        index = self._constant_pool.string(value)
         self._add_instruction(Opcode.LDC, index)
 
     def load_int(self, index: int):
@@ -616,10 +691,10 @@ class CodeBuilder:
     def cmp_float_gt(self):
         self._add_instruction(Opcode.FCMPG)
 
-    def cmp_double_lt(self):
+    def cmp_double_l(self):
         self._add_instruction(Opcode.DCMPL)
 
-    def cmp_double_gt(self):
+    def cmp_double_g(self):
         self._add_instruction(Opcode.DCMPG)
 
     def if_eq(self, index: Optional[int] = None):
@@ -678,23 +753,7 @@ class CodeBuilder:
         except IndexError:
             raise IndexError(f'No instruction on index {index}')
 
-        if instruction[0] != Opcode.IFEQ \
-                or instruction[0] != Opcode.IFNE \
-                or instruction[0] != Opcode.IFLT \
-                or instruction[0] != Opcode.IFGE \
-                or instruction[0] != Opcode.IFGT \
-                or instruction[0] != Opcode.IFLE \
-                or instruction[0] != Opcode.IF_ICMPEQ \
-                or instruction[0] != Opcode.IF_ICMPNE \
-                or instruction[0] != Opcode.IF_ICMPLT \
-                or instruction[0] != Opcode.IF_ICMPGE \
-                or instruction[0] != Opcode.IF_ICMPGT \
-                or instruction[0] != Opcode.IF_ICMPLE \
-                or instruction[0] != Opcode.IF_ACMPEQ \
-                or instruction[0] != Opcode.IF_ACMPNE \
-                or instruction[0] != Opcode.GOTO \
-                or instruction[0] != Opcode.IFNULL \
-                or instruction[0] != Opcode.IFNONNULL:
+        if not instruction[0].is_jump():
             raise IndexError(f'No jump instruction on index {index}, {instruction[0]} found')
 
         instruction[1] = target
@@ -717,65 +776,77 @@ class CodeBuilder:
     def return_void(self):
         self._add_instruction(Opcode.RETURN)
 
-    def load_static_field(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_field(class_name, name, descriptor)
+    def load_static_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(descriptor.operand_size())
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.GETSTATIC, index)
 
-    def store_static_field(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_field(class_name, name, descriptor)
+    def store_static_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(-descriptor.operand_size())
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.PUTSTATIC, index)
 
-    def load_field(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_field(class_name, name, descriptor)
+    def load_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(-1 + descriptor.operand_size())
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.GETFIELD, index)
 
-    def store_field(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_field(class_name, name, descriptor)
+    def store_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(-1 - descriptor.operand_size())
+        index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.PUTFIELD, index)
 
-    def invoke_virtual(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_method(class_name, name, descriptor)
+    def invoke_virtual(self, class_name: str, name: str, descriptor: MethodDescriptor):
+        args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
+        ret_size = descriptor.return_descriptor.operand_size()
+        diff = -1 - args_size + ret_size
+        self._set_stack_diff(diff)
+        index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKEVIRTUAL, index)
 
-    def invoke_special(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_method(class_name, name, descriptor)
+    def invoke_special(self, class_name: str, name: str, descriptor: MethodDescriptor):
+        args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
+        ret_size = descriptor.return_descriptor.operand_size()
+        diff = -1 - args_size + ret_size
+        self._set_stack_diff(diff)
+        index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKESPECIAL, index)
 
-    def invoke_static(self, class_name: str, name: str, descriptor: str):
-        index = self._add_const_method(class_name, name, descriptor)
+    def invoke_static(self, class_name: str, name: str, descriptor: MethodDescriptor):
+        args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
+        ret_size = descriptor.return_descriptor.operand_size()
+        diff = -1 - args_size + ret_size
+        self._set_stack_diff(diff)
+        index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKESTATIC, index)
 
     def new(self, class_name: str):
-        index = self._add_const_class(class_name)
+        index = self._constant_pool.class_ref(class_name)
         self._add_instruction(Opcode.NEW, index)
 
-    def new_array_int(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.INT)
-
-    def new_array_long(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.LONG)
-
-    def new_array_float(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.FLOAT)
-
-    def new_array_double(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.DOUBLE)
-
-    def new_array_byte(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.BYTE)
-
-    def new_array_boolean(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.BOOLEAN)
-
-    def new_array_char(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.CHAR)
-
-    def new_array_short(self):
-        self._add_instruction(Opcode.NEWARRAY, ArrayType.SHORT)
-
-    def new_array_reference(self, class_name: str):
-        index = self._add_const_class(class_name)
-        self._add_instruction(Opcode.ANEWARRAY, index)
+    def new_array(self, inner_descriptor: FieldDescriptor):
+        if isinstance(inner_descriptor, IntDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.INT)
+        elif isinstance(inner_descriptor, LongDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.LONG)
+        elif isinstance(inner_descriptor, FloatDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.FLOAT)
+        elif isinstance(inner_descriptor, DoubleDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.DOUBLE)
+        elif isinstance(inner_descriptor, ByteDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.BYTE)
+        elif isinstance(inner_descriptor, BooleanDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.BOOLEAN)
+        elif isinstance(inner_descriptor, CharDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.CHAR)
+        elif isinstance(inner_descriptor, ShortDesc):
+            self._add_instruction(Opcode.NEWARRAY, ArrayType.SHORT)
+        elif isinstance(inner_descriptor, ClassDesc):
+            index = self._constant_pool.class_ref(inner_descriptor.class_name)
+            self._add_instruction(Opcode.ANEWARRAY, index)
+        elif isinstance(inner_descriptor, ArrayDesc):
+            index = self._constant_pool.array_ref(inner_descriptor)
+            self._add_instruction(Opcode.ANEWARRAY, index)
 
     def array_length(self):
         self._add_instruction(Opcode.ARRAYLENGTH)

@@ -14,10 +14,10 @@ fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
     }
     else {
         hell();
-	joh = joh = 7;
+	      joh = joh = 7;
         arra = [];
         arra = [5,4];
-	bb = [[7], []];
+	      bb = [[7], []];
     }
 
     while true {
