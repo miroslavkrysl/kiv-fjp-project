@@ -10,7 +10,7 @@ from app.syntax import Node
 
 
 def print_tree(x, level=0):
-    if isinstance(x, tuple):
+    if isinstance(x, list) and len(x) > 0 and isinstance(x[0], Node):
         print(('    ' * level) + str(x[0]))
         for i in x[1:]:
             print_tree(i, level+1)

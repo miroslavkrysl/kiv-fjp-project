@@ -3,7 +3,8 @@ from enum import Enum
 from typing import Dict
 
 from app.gen.descriptor import MethodDescriptor, FieldDescriptor, ArrayDesc, ClassDesc
-from app.gen.util import is_int, is_long
+from app.util import is_int, is_long
+
 
 class Tag(Enum):
     UTF8 = 1

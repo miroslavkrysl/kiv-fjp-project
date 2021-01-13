@@ -1,13 +1,12 @@
 from enum import Enum
 from typing import List, Optional, Any, Dict
 
-from app.gen.constant import JConst, JConstInt, JConstDouble, JConstString, JConstUtf8, JConstNameAndType, JConstClass, \
-    JConstFieldRef, JConstMethodRef, ConstantPool
+from app.gen.constant import ConstantPool
 from app.gen.descriptor import JOperandType, JOperandTypeInt, JOperandTypeLong, JOperandTypeFloat, JOperandTypeDouble, \
     JOperandTypeReference, FieldDescriptor, MethodDescriptor, ArrayDesc, IntDesc, LongDesc, FloatDesc, DoubleDesc, \
     ByteDesc, BooleanDesc, CharDesc, ShortDesc, ClassDesc
 from app.gen.opcode import Opcode
-from app.gen.util import is_byte, is_short
+from app.util import is_byte, is_short
 
 
 class ArrayType(Enum):

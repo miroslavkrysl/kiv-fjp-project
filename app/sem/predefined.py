@@ -1,4 +1,4 @@
-from app.types import TypeInt, TypeStr, TypeArray
+from app.typing import TypeInt, TypeStr, TypeArray
 
 FN_MAIN = 'main'
 FN_MAIN_PARAMS = []
