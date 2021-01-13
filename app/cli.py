@@ -1,21 +1,36 @@
 # PLY's documentation: http://www.dabeaz.com/ply/ply.html
-import ply.lex as ply_scanner
-import ply.yacc as ply_parser
-from app.analyzers import *
+from pprint import pprint, pp
+
+import ply.lex
+import ply.yacc
+import app.lex
+import app.syntax
+import app.sem.analyze
+from app.syntax import Node
+
+
+def print_tree(x, level=0):
+    if isinstance(x, tuple):
+        print(('    ' * level) + str(x[0]))
+        for i in x[1:]:
+            print_tree(i, level+1)
+    elif isinstance(x, list):
+        if x:
+            print('    ' * level + '[')
+            for i in x:
+                print_tree(i, level + 1)
+            print('    ' * level + ']')
+        else:
+            print('    ' * level + str(x))
+    else:
+        print(('    ' * level) + str(x))
 
 
 def main():
     # Build the lexical_analyzer
-    lexer = ply_scanner.lex()
+    lexer = ply.lex.lex(module=app.lex)
 
-    # Test it out
-    # data = '''
-    # 3 + 4 * 10
-    #   + -20 *2
-    # '''
     data = open('../input_test.txt', 'r').read()
-
-    # Give the lexical_analyzer some input
     lexer.input(data)
 
     # Tokenize
@@ -26,21 +41,11 @@ def main():
         # print(tok)
         print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
-    # ----------
-    # Build the parser
-    parser = ply_parser.yacc()
-    # Parsing loop
-    # while True:
-    #     try:
-    #         s = input('> ')
-    #     except EOFError:
-    #         break
-    #     if not s: continue
-    #     result = parser.parse(s)
-    #     print(result)
+    parser = ply.yacc.yacc(module=app.syntax)
+    result = parser.parse(data, lexer=lexer, tracking=True)
 
-    result = parser.parse(data)
-    print(result)
+    print_tree(result)
+    # app.sem.analyze.analyze(result)
 
 
 if __name__ == '__main__':
