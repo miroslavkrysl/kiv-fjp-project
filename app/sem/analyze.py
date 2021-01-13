@@ -26,7 +26,6 @@ def _analyze_layer(items, depth, func_ins, loop_ins):
     # Go through all the items and register all the functions first in the root (depth-0)
     if depth == 0:
         for item in items:
-            print(item)
             if item[0] == Node.FUNCTION_DEFINITION:
                 if not _is_identifier_free(item[1], depth):
                     sem_errors.append("Identifier '{1}' is already taken. Depth: {0}".format(depth, item[1]))
@@ -187,8 +186,53 @@ def _is_identifier_free(identifier, depth):
     return True
 
 
-# def _struct_expression(texpression):
-#     pass
+def _struct_expression(texpression):
+    """
+    Add type into all records recursively
+    :param texpression: The expression
+    :return: New updated expression with types
+    """
+    if texpression[0] == Node.MUL \
+            or texpression[0] == Node.DIV \
+            or texpression[0] == Node.PLUS \
+            or texpression[0] == Node.MINUS \
+            or texpression[0] == Node.EQ \
+            or texpression[0] == Node.NE \
+            or texpression[0] == Node.LT \
+            or texpression[0] == Node.GT \
+            or texpression[0] == Node.LE \
+            or texpression[0] == Node.GE \
+            or texpression[0] == Node.NOT \
+            or texpression[0] == Node.AND \
+            or texpression[0] == Node.OR:
+        return (texpression[0], _struct_expression(texpression[1]), _struct_expression(texpression[2]), _validate_expression(texpression))
+
+    elif texpression[0] == Node.UPLUS \
+            or texpression[0] == Node.UMINUS:
+        return (texpression[0], texpression[1], _validate_expression(texpression))
+
+    elif texpression[0] == Node.VARIABLE_LOAD\
+            or texpression[0] == Node.VARIABLE_ASSIGNMENT:
+        v = _get_var(texpression[1])
+        if v is None:
+            sem_errors.append("Variable '{0}' does not exist.".format(texpression[1]))
+            return (None,)
+        else:
+            return (texpression[0], texpression[1], v[0])
+
+    elif texpression[0] == Node.VALUE_ARRAY\
+            or texpression[0] == Node.ARRAY_ASSIGNMENT:
+        idx = 1
+        if texpression[0] == Node.ARRAY_ASSIGNMENT:
+            idx = 2
+        arr = []
+        if len(texpression[idx]) > 0:
+            for te in texpression[idx]:
+                arr.append(_struct_expression(te))
+        return (texpression[0], arr, _validate_expression(texpression))
+
+    else:
+        return (texpression[0], texpression[1], _validate_expression(texpression))
 
 
 def _validate_expression(texpression):
@@ -250,7 +294,8 @@ def _validate_expression(texpression):
         else:
             return (None,)
 
-    elif texpression[0] == Node.VARIABLE_LOAD:
+    elif texpression[0] == Node.VARIABLE_LOAD \
+            or texpression[0] == Node.VARIABLE_ASSIGNMENT:
         v = _get_var(texpression[1])
         if v is None:
             sem_errors.append("Variable '{0}' does not exist.".format(texpression[1]))
@@ -258,15 +303,19 @@ def _validate_expression(texpression):
         else:
             return v[0]
 
-    elif texpression[0] == Node.VALUE_ARRAY:
+    elif texpression[0] == Node.VALUE_ARRAY \
+            or texpression[0] == Node.ARRAY_ASSIGNMENT:
+        idx = 1
+        if texpression[0] == Node.ARRAY_ASSIGNMENT:
+            idx = 2
         dim = 1
-        if len(texpression[1]) > 0:
-            subexpr = texpression[1][0]
+        if len(texpression[idx]) > 0:
+            subexpr = texpression[idx][0]
             while True:
                 if subexpr[0] == Node.VALUE_ARRAY:
                     dim += 1
-                    if len(subexpr[1]) > 0:
-                        subexpr = subexpr[1][0]
+                    if len(subexpr[idx]) > 0:
+                        subexpr = subexpr[idx][0]
                     else:
                         subexpr = (None,)  # Empty array
                 else:
