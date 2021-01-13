@@ -7,10 +7,6 @@ from app.gen.opcode import Opcode, stack_change
 from app.gen.util import is_short, is_byte, is_ubyte, is_ushort
 
 
-
-
-
-
 class ConstInt(JConstant):
     def tag(self) -> int:
         pass
