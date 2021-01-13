@@ -1,16 +1,23 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 
 from app.gen.code import Code
 from app.gen.descriptor import ArrayDesc, FieldDescriptor, IntDesc, DoubleDesc, BooleanDesc, ClassDesc, \
     MethodDescriptor
-from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_MAIN_NAME, J_MAIN_DESCRIPTOR
+from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_MAIN_NAME, J_MAIN_DESCRIPTOR, \
+    JM_STRING_LENGTH, JSM_INT_TO_STRING, JSM_INT_PARSE, JSM_BOOLEAN_PARSE, JSM_DOUBLE_PARSE, JSM_DOUBLE_TO_STRING, \
+    JSM_BOOLEAN_TO_STRING, JSF_STDIN, JM_PRINT, JSF_STDOUT, JC_BUFF_READER, JM_READLINE, JM_STRING_CONCAT, \
+    JM_STRING_EQUALS, JC_INPUT_STREAM_READER, JIM_INPUT_STREAM_READER, JIM_BUFF_READER, JM_STRING_SUBSTRING
 from app.gen.struct import Class
-from app.names import FN_MAIN, MAIN_PARAMS, MAIN_RETURN, BOOL_INT_FALSE, BOOL_INT_TRUE, FN_LEN
+from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
+    FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING
 from app.types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
 from app.syntax import Node
 
 
-_variables: Dict[str, int] = {}
+BUFF_READER_FIELD = '$input'
+
+_locals: Dict[str, int] = {}
+_fields: Dict[str, Tuple[str, str, FieldDescriptor]] = {}
 _class_name: str = ""
 
 
@@ -153,7 +160,7 @@ def _statement_var_def(code: Code, statement):
     else:
         raise NotImplementedError()
 
-    _variables[name] = index
+    _locals[name] = index
 
 
 def _statement_var_store(code: Code, exp):
@@ -161,7 +168,7 @@ def _statement_var_store(code: Code, exp):
     expression = exp[2]
     t = exp[3]
 
-    index = _variables[name]
+    index = _locals[name]
 
     _expression(code, expression)
 
@@ -186,7 +193,7 @@ def _statement_array_store(code: Code, exp):
     t = exp[4]
 
     # top array load
-    index = _variables[name]
+    index = _locals[name]
     code.load_reference(index)
 
     # subarrays load if multidim
@@ -313,11 +320,7 @@ def _exp_plus(code: Code, exp):
     elif isinstance(t, TypeReal):
         code.add_double()
     elif isinstance(t, TypeStr):
-        # TODO string concat
-        pass
-    elif isinstance(t, ArrayDesc):
-        # TODO array concat
-        pass
+        code.invoke_virtual(*JM_STRING_CONCAT)
     else:
         NotImplementedError()
 
@@ -348,12 +351,6 @@ def _exp_sub(code: Code, exp):
         code.add_int()
     elif isinstance(t, TypeReal):
         code.add_double()
-    elif isinstance(t, TypeStr):
-        # TODO string concat
-        pass
-    elif isinstance(t, ArrayDesc):
-        # TODO array concat
-        pass
     else:
         NotImplementedError()
 
@@ -373,21 +370,17 @@ def _exp_eq(code: Code, exp):
         else:
             cmp_pos = code.pos()
             code.if_cmp_int_eq()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     elif isinstance(t, TypeStr):
-        # TODO string cmp
-        pass
-    elif isinstance(t, TypeArray):
-        # TODO array cmp
-        pass
+        code.invoke_virtual(*JM_STRING_EQUALS)
     else:
         NotImplementedError()
 
@@ -407,21 +400,28 @@ def _exp_ne(code: Code, exp):
         else:
             cmp_pos = code.pos()
             code.if_cmp_int_ne()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     elif isinstance(t, TypeStr):
-        # TODO string cmp
-        pass
-    elif isinstance(t, TypeArray):
-        # TODO array cmp
-        pass
+        code.invoke_virtual(*JM_STRING_EQUALS)
+        cmp_pos = code.pos()
+        code.if_eq()
+        code.const_int(0)
+        goto_pos = code.pos()
+        code.goto()
+        false_pos = code.pos()
+        code.const_int(1)
+        end_pos = code.pos()
+
+        code.update_jump(cmp_pos, false_pos)
+        code.update_jump(goto_pos, end_pos)
     else:
         NotImplementedError()
 
@@ -441,11 +441,11 @@ def _exp_lt(code: Code, exp):
         else:
             cmp_pos = code.pos()
             code.if_cmp_int_lt()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, true_pos)
@@ -469,11 +469,11 @@ def _exp_gt(code: Code, exp):
         else:
             cmp_pos = code.pos()
             code.if_cmp_int_gt()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, true_pos)
@@ -497,11 +497,11 @@ def _exp_le(code: Code, exp):
         else:
             cmp_pos = code.pos()
             code.if_cmp_int_le()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, true_pos)
@@ -525,11 +525,11 @@ def _exp_ge(code: Code, exp):
         else:
             cmp_pos = code.pos()
             code.if_cmp_int_ge()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, true_pos)
@@ -546,11 +546,11 @@ def _exp_not(code: Code, exp):
     if isinstance(t, TypeBool):
         cmp_pos = code.pos()
         code.if_eq()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         false_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp_pos, false_pos)
@@ -571,11 +571,11 @@ def _exp_and(code: Code, exp):
         code.if_eq()
         cmp2_pos = code.pos()
         code.if_eq()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         goto_pos = code.pos()
         code.goto()
         false_pos = code.pos()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         end_pos = code.pos()
 
         code.update_jump(cmp1_pos, false_pos)
@@ -597,11 +597,11 @@ def _exp_or(code: Code, exp):
         code.if_ne()
         cmp2_pos = code.pos()
         code.if_ne()
-        code.const_int(BOOL_INT_FALSE)
+        code.const_int(0)
         goto_pos = code.pos()
         code.goto()
         true_pos = code.pos()
-        code.const_int(BOOL_INT_TRUE)
+        code.const_int(1)
         end_pos = code.pos()
 
         code.update_jump(cmp1_pos, true_pos)
@@ -615,20 +615,23 @@ def _exp_var_load(code: Code, exp):
     name = exp[1]
     t = exp[2]
 
-    index = _variables[name]
-
-    if isinstance(t, TypeInt):
-        code.load_int(index)
-    elif isinstance(t, TypeReal):
-        code.load_double(index)
-    elif isinstance(t, TypeBool):
-        code.load_int(index)
-    elif isinstance(t, TypeStr):
-        code.load_reference(index)
-    elif isinstance(t, TypeArray):
-        code.load_reference(index)
+    index = _locals.get(name)
+    if index:
+        if isinstance(t, TypeInt):
+            code.load_int(index)
+        elif isinstance(t, TypeReal):
+            code.load_double(index)
+        elif isinstance(t, TypeBool):
+            code.load_int(index)
+        elif isinstance(t, TypeStr):
+            code.load_reference(index)
+        elif isinstance(t, TypeArray):
+            code.load_reference(index)
+        else:
+            raise NotImplementedError()
     else:
-        raise NotImplementedError()
+        field = _fields.get(name)
+        code.load_field(field[0], field[1], field[2])
 
 
 def _exp_array_load(code: Code, exp):
@@ -693,8 +696,7 @@ def _exp_var_assign(code: Code, exp):
     expression = exp[2]
     t = exp[3]
 
-    index = _variables[name]
-
+    index = _locals[name]
     _expression(code, expression)
 
     if isinstance(t, TypeInt):
@@ -723,7 +725,7 @@ def _exp_array_assign(code: Code, exp):
     t = exp[4]
 
     # top array load
-    index = _variables[name]
+    index = _locals[name]
     code.load_reference(index)
 
     # subarrays load if multidim
@@ -735,19 +737,19 @@ def _exp_array_assign(code: Code, exp):
     _expression(code, index_exps[-1])
     _expression(code, expression)
     if isinstance(t.inner, TypeInt):
-        code.dup()
+        code.dup_x1()
         code.array_store_int()
     elif isinstance(t.inner, TypeReal):
-        code.dup2()
+        code.dup2_x1()
         code.array_store_double()
     elif isinstance(t.inner, TypeBool):
-        code.dup()
+        code.dup_x1()
         code.array_store_boolean()
     elif isinstance(t.inner, TypeStr):
-        code.dup()
+        code.dup_x1()
         code.array_store_reference()
     elif isinstance(t.inner, TypeArray):
-        code.dup()
+        code.dup_x1()
         code.array_store_reference()
     else:
         raise NotImplementedError()
@@ -759,18 +761,109 @@ def _exp_function_call(code: Code, exp):
     params = exp[3]
     ret = exp[4]
 
-    # TODO check reserved functions
-
     for e in args_exps:
         _expression(code, e)
 
+    # check for predefined functions
+    if name == FN_LEN and len(params) == 1:
+        if isinstance(params[0], TypeStr):
+            code.invoke_virtual(*JM_STRING_LENGTH)
+            return
+        elif isinstance(params[0], TypeArray):
+            code.array_length()
+            return
+
+    if name == FN_INT and len(params) == 1:
+        if isinstance(params[0], TypeInt):
+            # nothing to do
+            return
+        elif isinstance(params[0], TypeReal):
+            code.double_to_int()
+            return
+        elif isinstance(params[0], TypeBool):
+            # nothing to do
+            return
+        elif isinstance(params[0], TypeStr):
+            code.invoke_static(*JSM_INT_PARSE)
+            return
+
+    if name == FN_REAL and len(params) == 1:
+        if isinstance(params[0], TypeInt):
+            code.int_to_double()
+            return
+        elif isinstance(params[0], TypeReal):
+            # nothing to do
+            return
+        elif isinstance(params[0], TypeBool):
+            code.int_to_double()
+            return
+        elif isinstance(params[0], TypeStr):
+            code.invoke_static(*JSM_DOUBLE_PARSE)
+            return
+
+    if name == FN_BOOL and len(params) == 1:
+        if isinstance(params[0], TypeInt):
+            code.const_int(1)
+            code.add_int()
+            return
+        elif isinstance(params[0], TypeReal):
+            code.const_double(0.0)
+            code.cmp_double_l()
+            cmp_pos = code.pos()
+            code.if_eq()
+            code.const_int(1)
+            goto_pos = code.pos()
+            code.goto()
+            false_pos = code.pos()
+            code.const_int(0)
+            end_pos = code.pos()
+
+            code.update_jump(cmp_pos, false_pos)
+            code.update_jump(goto_pos, end_pos)
+            return
+        elif isinstance(params[0], TypeBool):
+            # nothing to do
+            return
+        elif isinstance(params[0], TypeStr):
+            code.invoke_static(*JSM_BOOLEAN_PARSE)
+            return
+
+    if name == FN_STR and len(params) == 1:
+        if isinstance(params[0], TypeInt):
+            code.invoke_static(*JSM_INT_TO_STRING)
+            return
+        elif isinstance(params[0], TypeReal):
+            code.invoke_static(*JSM_DOUBLE_TO_STRING)
+            return
+        elif isinstance(params[0], TypeBool):
+            code.invoke_static(*JSM_BOOLEAN_TO_STRING)
+            return
+
+    if name == FN_SUBSTRING and len(params) == 3:
+        if isinstance(params[0], TypeStr) and isinstance(params[1], TypeInt) and isinstance(params[2], TypeInt):
+            code.invoke_static(*JM_STRING_SUBSTRING)
+            return
+
+    if name == FN_WRITE and len(params) == 1:
+        if isinstance(params[0], TypeStr):
+            code.load_static_field(*JSF_STDOUT)
+            code.swap()
+            code.invoke_virtual(*JM_PRINT)
+            return
+
+    if name == FN_READ_LINE and len(params) == 0:
+        if isinstance(params[0], TypeStr):
+            code.load_static_field(_class_name, BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
+            code.swap()
+            code.invoke_virtual(*JM_READLINE)
+            return
+
+    # custom function
     desc = _create_method_descriptor(params, ret)
     code.invoke_static(_class_name, name, desc)
 
 
 def _expression(code: Code, expression):
-    t = expression[1]
-
     if expression[0] == Node.UMINUS:
         _exp_uminus(code, expression)
     elif expression[0] == Node.UPLUS:
@@ -826,22 +919,41 @@ def _expression(code: Code, expression):
 
 
 def _generate_clinit(cls: Class, constants):
+    global _fields
+    _fields = {}
+
     clinit = cls.method(J_CLINIT_NAME, J_CLINIT_DESCRIPTOR)
     code = clinit.code
 
+    # generate input buff reader
+    cls.field(BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
+    code.new(JC_BUFF_READER)
+    code.dup()
+    code.new(JC_INPUT_STREAM_READER)
+    code.dup()
+    code.load_static_field(*JSF_STDIN)
+    code.invoke_special(*JIM_INPUT_STREAM_READER)
+    code.invoke_special(*JIM_BUFF_READER)
+    code.store_static_field(_class_name, BUFF_READER_FIELD, JC_BUFF_READER)
+
+    # generate contants fields
     for c in constants:
         name = c[1]
         const_type = c[2]
         expression = c[3]
         descriptor = _create_field_descriptor(const_type)
 
+        _fields[name] = (_class_name, name, descriptor)
         cls.field(name, descriptor)
         _expression(code, expression)
+        code.store_static_field(_class_name, name, descriptor)
+
+    code.return_void()
 
 
 def _generate_functions(cls: Class, functions):
     for f in functions:
-        _variables.clear()
+        _locals.clear()
 
         name = f[1]
         params = f[2]
@@ -855,15 +967,17 @@ def _generate_functions(cls: Class, functions):
             _statement(method.code, s)
 
 
-def _generate_main(cls: Class, main_class_name: str):
+def _generate_main(cls: Class):
     method = cls.method(J_MAIN_NAME, J_MAIN_DESCRIPTOR)
-    method.code.invoke_static(main_class_name, FN_MAIN, _create_method_descriptor(MAIN_PARAMS, MAIN_RETURN))
+    method.code.invoke_static(_class_name, FN_MAIN, _create_method_descriptor(FN_MAIN_PARAMS, FN_MAIN_RETURN))
     method.code.return_void()
 
 
-def generate(self, class_name, ast) -> Class:
+def generate(class_name: str, ast) -> Class:
     global _class_name
+    global _fields
 
+    _class_name = class_name
     _class_name = class_name
     cls = Class(class_name)
     constants = []
@@ -877,7 +991,7 @@ def generate(self, class_name, ast) -> Class:
         else:
             NotImplementedError()
 
-    _generate_main(cls, class_name)
+    _generate_main(cls)
     _generate_clinit(cls, constants)
     _generate_functions(cls, functions)
 
