@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 
 from app.gen.constant import JConst, JConstInt, JConstDouble, JConstString, JConstUtf8, JConstNameAndType, JConstClass, \
     JConstFieldRef, JConstMethodRef, ConstantPool
@@ -27,6 +27,49 @@ class Code:
         self._constant_pool = constant_pool
         self._instructions: List[Any] = []
         self._locals: List[JOperandType] = []
+        self._stack_diffs: Dict[int, int] = {}
+
+    @property
+    def instructions(self):
+        return self._instructions
+
+    @property
+    def locals(self) -> List[JOperandType]:
+        return self._locals
+
+    @property
+    def constant_pool(self) -> ConstantPool:
+        return self._constant_pool
+
+    def instruction_length(self, index: int):
+        """
+        The length of the instruction.
+        :param index: The index of the instruction
+        :return: Length in bytes.
+        """
+        instruction = self._instructions[index]
+
+        if instruction[0].length is not None:
+            return instruction[0].length
+
+        raise NotImplementedError()
+
+    def instruction_stack_diff(self, index: int):
+        """
+        The stack size difference after execution of the instruction.
+        :param index: The index of the instruction.
+        :return: Difference in words.
+        """
+        instruction = self._instructions[index]
+
+        if instruction[0].stack_diff is not None:
+            return instruction[0].stack_diff
+
+        return self._stack_diffs[index]
+
+    def _set_stack_diff(self, diff: int):
+        pos = self.pos()
+        self._stack_diffs[pos] = diff
 
     def _add_instruction(self, opcode: Opcode, *args):
         self._instructions.append((opcode, *args))
@@ -710,23 +753,7 @@ class Code:
         except IndexError:
             raise IndexError(f'No instruction on index {index}')
 
-        if instruction[0] != Opcode.IFEQ \
-                or instruction[0] != Opcode.IFNE \
-                or instruction[0] != Opcode.IFLT \
-                or instruction[0] != Opcode.IFGE \
-                or instruction[0] != Opcode.IFGT \
-                or instruction[0] != Opcode.IFLE \
-                or instruction[0] != Opcode.IF_ICMPEQ \
-                or instruction[0] != Opcode.IF_ICMPNE \
-                or instruction[0] != Opcode.IF_ICMPLT \
-                or instruction[0] != Opcode.IF_ICMPGE \
-                or instruction[0] != Opcode.IF_ICMPGT \
-                or instruction[0] != Opcode.IF_ICMPLE \
-                or instruction[0] != Opcode.IF_ACMPEQ \
-                or instruction[0] != Opcode.IF_ACMPNE \
-                or instruction[0] != Opcode.GOTO \
-                or instruction[0] != Opcode.IFNULL \
-                or instruction[0] != Opcode.IFNONNULL:
+        if not instruction[0].is_jump():
             raise IndexError(f'No jump instruction on index {index}, {instruction[0]} found')
 
         instruction[1] = target
@@ -750,30 +777,46 @@ class Code:
         self._add_instruction(Opcode.RETURN)
 
     def load_static_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(descriptor.operand_size())
         index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.GETSTATIC, index)
 
     def store_static_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(-descriptor.operand_size())
         index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.PUTSTATIC, index)
 
     def load_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(-1 + descriptor.operand_size())
         index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.GETFIELD, index)
 
     def store_field(self, class_name: str, name: str, descriptor: FieldDescriptor):
+        self._set_stack_diff(-1 - descriptor.operand_size())
         index = self._constant_pool.field_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.PUTFIELD, index)
 
     def invoke_virtual(self, class_name: str, name: str, descriptor: MethodDescriptor):
+        args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
+        ret_size = descriptor.return_descriptor.operand_size()
+        diff = -1 - args_size + ret_size
+        self._set_stack_diff(diff)
         index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKEVIRTUAL, index)
 
     def invoke_special(self, class_name: str, name: str, descriptor: MethodDescriptor):
+        args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
+        ret_size = descriptor.return_descriptor.operand_size()
+        diff = -1 - args_size + ret_size
+        self._set_stack_diff(diff)
         index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKESPECIAL, index)
 
     def invoke_static(self, class_name: str, name: str, descriptor: MethodDescriptor):
+        args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
+        ret_size = descriptor.return_descriptor.operand_size()
+        diff = -1 - args_size + ret_size
+        self._set_stack_diff(diff)
         index = self._constant_pool.method_ref(class_name, name, descriptor)
         self._add_instruction(Opcode.INVOKESTATIC, index)
 

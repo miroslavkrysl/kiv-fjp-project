@@ -1,5 +1,5 @@
 import struct
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import Optional
 
@@ -10,11 +10,11 @@ from app.gen.util import is_short, is_byte, is_ubyte, is_ushort
 
 
 
-class JConstant(ABC):
-    pass
-
 
 class ConstInt(JConstant):
+    def tag(self) -> int:
+        pass
+
     def __init__(self, value: int):
         self.value = value
 

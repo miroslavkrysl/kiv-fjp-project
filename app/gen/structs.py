@@ -98,3 +98,11 @@ class Class:
     @property
     def fields(self):
         return self._fields
+
+    @property
+    def constant_pool(self) -> ConstantPool:
+        return self._constant_pool
+
+    @property
+    def this_class(self):
+        return self._this_class

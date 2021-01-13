@@ -5,27 +5,34 @@ from typing import List, Optional
 # --- Java operand types ---
 
 class JOperandType(ABC):
-    pass
+    @abstractmethod
+    def size(self):
+        pass
 
 
 class JOperandTypeInt(JOperandType):
-    pass
+    def size(self):
+        return 1
 
 
 class JOperandTypeLong(JOperandType):
-    pass
+    def size(self):
+        return 2
 
 
 class JOperandTypeFloat(JOperandType):
-    pass
+    def size(self):
+        return 1
 
 
 class JOperandTypeDouble(JOperandType):
-    pass
+    def size(self):
+        return 2
 
 
 class JOperandTypeReference(JOperandType):
-    pass
+    def size(self):
+        return 1
 
 
 # --- Java type descriptors ---
@@ -43,7 +50,9 @@ class Descriptor:
 
 
 class FieldDescriptor(Descriptor, ABC):
-    pass
+    @abstractmethod
+    def operand_size(self):
+        pass
 
 
 class BaseDescriptor(FieldDescriptor, ABC):
@@ -51,6 +60,9 @@ class BaseDescriptor(FieldDescriptor, ABC):
 
 
 class ByteDesc(BaseDescriptor):
+
+    def operand_size(self):
+        return 1
 
     def utf8(self) -> str:
         return 'B'
@@ -61,6 +73,9 @@ class ByteDesc(BaseDescriptor):
 
 class CharDesc(BaseDescriptor):
 
+    def operand_size(self):
+        return 1
+
     def utf8(self) -> str:
         return 'C'
 
@@ -69,6 +84,9 @@ class CharDesc(BaseDescriptor):
 
 
 class DoubleDesc(BaseDescriptor):
+
+    def operand_size(self):
+        return 2
 
     def utf8(self) -> str:
         return 'D'
@@ -79,6 +97,9 @@ class DoubleDesc(BaseDescriptor):
 
 class FloatDesc(BaseDescriptor):
 
+    def operand_size(self):
+        return 1
+
     def utf8(self) -> str:
         return 'F'
 
@@ -88,6 +109,9 @@ class FloatDesc(BaseDescriptor):
 
 class IntDesc(BaseDescriptor):
 
+    def operand_size(self):
+        return 1
+
     def utf8(self) -> str:
         return 'I'
 
@@ -96,6 +120,9 @@ class IntDesc(BaseDescriptor):
 
 
 class LongDesc(BaseDescriptor):
+
+    def operand_size(self):
+        return 2
 
     def utf8(self) -> str:
         return 'J'
@@ -107,6 +134,9 @@ class LongDesc(BaseDescriptor):
 class ClassDesc(BaseDescriptor):
     def __init__(self, class_name: str):
         self._class_name = class_name
+
+    def operand_size(self):
+        return 1
 
     @property
     def class_name(self):
@@ -130,6 +160,9 @@ class ClassDesc(BaseDescriptor):
 
 class ShortDesc(BaseDescriptor):
 
+    def operand_size(self):
+        return 1
+
     def utf8(self) -> str:
         return 'S'
 
@@ -138,6 +171,9 @@ class ShortDesc(BaseDescriptor):
 
 
 class BooleanDesc(BaseDescriptor):
+
+    def operand_size(self):
+        return 1
 
     def utf8(self) -> str:
         return 'Z'
@@ -151,6 +187,9 @@ class ArrayDesc(FieldDescriptor):
         assert 1 <= dim <= 255
         self._dim: int = dim
         self._inner: BaseDescriptor = inner
+
+    def operand_size(self):
+        return 1
 
     @property
     def dim(self) -> int:
