@@ -15,12 +15,18 @@ keywords = {
     'break': 'BREAK',
     'continue': 'CONTINUE',
 
+    # Boolean values
+    'true': 'LITERAL_BOOL',
+    'false': 'LITERAL_BOOL',
+
     # Data types
     'Int': 'TYPE_INT',
     'Real': 'TYPE_REAL',
     'Bool': 'TYPE_BOOL',
     'Str': 'TYPE_STR'
 }
+
+boolean = {'true', 'false'}
 
 t_COMMA = r'\,'
 t_COLON = r':'
@@ -71,14 +77,6 @@ def t_LITERAL_INT(t):
     return t
 
 
-def t_LITERAL_BOOL(t):
-    r"""
-    true|false
-    """
-    t.value = bool(t.value)
-    return t
-
-
 def t_LITERAL_STR(t):
     r"""
     "([^\\"]|\\.)*\"
@@ -94,6 +92,10 @@ def t_IDENTIFIER(t):
     k = keywords.get(t.value)
     if k:
         t.type = k
+
+    if t.value in boolean:
+        t.type = 'LITERAL_BOOL'
+        t.value = bool(t.value)
     return t
 
 
