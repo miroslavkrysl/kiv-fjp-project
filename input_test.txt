@@ -1,34 +1,28 @@
 const hello: Int = 12;
 
-fn hellofn(a: Int, b: [[Int]], c: Bool, d: Str, c: Real): [[[Str]]] {
-    call(41, 23, "string");
-
+fn hellofn(a: Int): [[[Str]]] {
     var hoj: Str = "gsd";
     var joh: Int = -5;
-    var arra: [Int] = [];
     var bb: [[Int]] = [[], []];
     const konstanta: Int = 14;
 
-    if hello == konstanta & true {
-        call(10,2,"s");
+    if konstanta == 1 & true {
     }
     else {
-        hell();
-	      joh = joh = 7;
-        arra = [];
-        arra = [5,4];
-	      bb = [[7], []];
     }
 
     while true {
         break;
         continue;
+        var ho: Int = int("hello");
     }
 
     hello[12][12] = jello[25 + 4][40] = 11;
 }
 
-fn call(a:Int, b:Int, c:Str) {
+fn call(a:Int, b:Int, c:Str): Int {
+    var r: [[[Str]]] = hellofn(12);
+    return 12;
 }
 
 fn hell() {

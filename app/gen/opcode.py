@@ -210,9 +210,8 @@ class Opcode(IntEnum):
     GOTO_W = (0xC8, 5, None, None)
     JSR_W = (0xC9, 5, None, None)
 
-
     def __new__(cls, value: int, length: int, stack_diff: int, fmt: str):
-        obj = object.__new__(cls)
+        obj = int.__new__(cls)
         obj._value_ = value
         obj.length = length
         obj.stack_diff = stack_diff

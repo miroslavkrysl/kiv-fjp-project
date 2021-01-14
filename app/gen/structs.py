@@ -51,7 +51,7 @@ class Method:
 
     @property
     def code(self) -> Code:
-        return self.code
+        return self._code
 
 
 class Class:

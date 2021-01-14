@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import List, Optional
+from typing import List, Optional, Iterable, Tuple
 
 
 # --- Java operand types ---
@@ -217,8 +217,8 @@ class ArrayDesc(FieldDescriptor):
 
 class MethodDescriptor(Descriptor):
 
-    def __init__(self, params_descriptor: List[FieldDescriptor], return_descriptor: Optional[FieldDescriptor] = None):
-        self._params_descriptors: List[FieldDescriptor] = params_descriptor
+    def __init__(self, params_descriptor: Iterable[FieldDescriptor], return_descriptor: Optional[FieldDescriptor] = None):
+        self._params_descriptors: Tuple[FieldDescriptor] = tuple(params_descriptor)
         self._return_descriptor: Optional[FieldDescriptor] = return_descriptor
 
     @property

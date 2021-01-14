@@ -10,7 +10,7 @@ from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_
 from app.gen.structs import Class, Method
 from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
     FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING, FN_EOF
-from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
+from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray, TypeVoid
 from app.syntax import Node
 
 
@@ -47,7 +47,7 @@ def _create_field_descriptor(t: Type) -> FieldDescriptor:
 
         return ArrayDesc(t.dim, inner)
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(t)
 
 
 def _create_method_descriptor(params: List[Type], ret: Optional[Type]) -> MethodDescriptor:
@@ -122,7 +122,7 @@ def _statement_return(code: Code, statement):
     if expression:
         _expression(code, expression)
 
-    if t is None:
+    if isinstance(t, TypeVoid):
         code.return_void()
     elif isinstance(t, TypeInt):
         code.return_int()
@@ -996,6 +996,7 @@ def _expression(code: Code, expression):
 
 def _generate_clinit():
     global _fields
+    global _clinit
     _fields = {}
 
     _clinit = _class.method(J_CLINIT_NAME, J_CLINIT_DESCRIPTOR)
@@ -1015,7 +1016,7 @@ def _generate_clinit():
     code.load_static_field(*JSF_STDIN)
     code.invoke_special(*JIM_INPUT_STREAM_READER)
     code.invoke_special(*JIM_BUFF_READER)
-    code.store_static_field(_class_name, BUFF_READER_FIELD, JC_BUFF_READER)
+    code.store_static_field(_class_name, BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
 
 
 def _close_clinit():

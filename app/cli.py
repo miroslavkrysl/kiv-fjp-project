@@ -6,6 +6,7 @@ import ply.yacc
 import app.lex
 import app.syntax
 import app.sem.analyze
+from app.gen.generator import generate
 from app.syntax import Node
 
 
@@ -48,6 +49,7 @@ def main():
 
     print_tree(result)
     app.sem.analyze(result)
+    cls = generate("Main", result)
 
 
 if __name__ == '__main__':

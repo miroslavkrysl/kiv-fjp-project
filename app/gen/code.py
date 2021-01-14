@@ -797,7 +797,7 @@ class Code:
 
     def invoke_virtual(self, class_name: str, name: str, descriptor: MethodDescriptor):
         args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
-        ret_size = descriptor.return_descriptor.operand_size()
+        ret_size = 0 if descriptor.return_descriptor is None else descriptor.return_descriptor.operand_size()
         diff = -1 - args_size + ret_size
         self._set_stack_diff(diff)
         index = self._constant_pool.method_ref(class_name, name, descriptor)
@@ -805,7 +805,7 @@ class Code:
 
     def invoke_special(self, class_name: str, name: str, descriptor: MethodDescriptor):
         args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
-        ret_size = descriptor.return_descriptor.operand_size()
+        ret_size = 0 if descriptor.return_descriptor is None else descriptor.return_descriptor.operand_size()
         diff = -1 - args_size + ret_size
         self._set_stack_diff(diff)
         index = self._constant_pool.method_ref(class_name, name, descriptor)
@@ -813,7 +813,7 @@ class Code:
 
     def invoke_static(self, class_name: str, name: str, descriptor: MethodDescriptor):
         args_size = sum([p.operand_size() for p in descriptor.params_descriptors])
-        ret_size = descriptor.return_descriptor.operand_size()
+        ret_size = 0 if descriptor.return_descriptor is None else descriptor.return_descriptor.operand_size()
         diff = -1 - args_size + ret_size
         self._set_stack_diff(diff)
         index = self._constant_pool.method_ref(class_name, name, descriptor)
