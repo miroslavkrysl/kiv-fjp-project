@@ -47,12 +47,19 @@ def _create_field_descriptor(t: Type) -> FieldDescriptor:
 
         return ArrayDesc(t.dim, inner)
     else:
-        raise NotImplementedError(t)
+        raise NotImplementedError()
+
+
+def _create_return_descriptor(t: Type) -> Optional[FieldDescriptor]:
+    if isinstance(t, TypeVoid):
+        return None
+    else:
+        return _create_field_descriptor(t)
 
 
 def _create_method_descriptor(params: List[Type], ret: Optional[Type]) -> MethodDescriptor:
     params_desc = [_create_field_descriptor(p) for p in params]
-    ret_desc = None if ret is None else _create_field_descriptor(ret)
+    ret_desc = None if ret is None else _create_return_descriptor(ret)
     return MethodDescriptor(params_desc, ret_desc)
 
 
@@ -172,7 +179,7 @@ def _function_def(statement):
     ret = statement['return']
     statements = statement['statements']
 
-    method_desc = _create_method_descriptor([p['type'] for p in params], ret['type'])
+    method_desc = _create_method_descriptor([p['type'] for p in params], ret)
 
     method = _class.method(name, method_desc)
 
@@ -268,7 +275,7 @@ def _statement_array_store(code: Code, exp):
 
 
 def _statement_function_call(code: Code, exp):
-    ret = exp['return_type']
+    ret = exp['return']
     _exp_function_call(code, exp)
 
     if isinstance(ret, TypeInt) \
@@ -697,11 +704,16 @@ def _exp_var_load(code: Code, exp):
 
 
 def _exp_array_load(code: Code, exp):
-    array_exp = exp['expression']
+    name = exp['name']
     index_exps = exp['indexes']
     t = exp['type']
 
-    _expression(code, array_exp)
+    index = _locals.get(name)
+    if index:
+        code.load_reference(index)
+    else:
+        field = _fields.get(name)
+        code.load_field(field[0], field[1], field[2])
 
     # subarrays load if multidim
     for e in index_exps[:-1]:
@@ -820,8 +832,8 @@ def _exp_array_assign(code: Code, exp):
 def _exp_function_call(code: Code, exp):
     name = exp['name']
     args_exps = exp['arguments']
-    params = exp['parameters_types']
-    ret = exp['return_type']
+    params = exp['parameters']
+    ret = exp['return']
 
     for e in args_exps:
         _expression(code, e)
