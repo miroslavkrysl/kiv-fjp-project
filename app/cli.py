@@ -10,10 +10,12 @@ from app.syntax import Node
 
 
 def print_tree(x, level=0):
-    if isinstance(x, list) and len(x) > 0 and isinstance(x[0], Node):
-        print(('    ' * level) + str(x[0]))
-        for i in x[1:]:
-            print_tree(i, level+1)
+    if isinstance(x, dict):
+        print(('    ' * level) + str(x['node']))
+        for (k, v) in x.items():
+            if k != 'node':
+                print(('    ' * (level+1)) + k + ':')
+                print_tree(v, level+2)
     elif isinstance(x, list):
         if x:
             print('    ' * level + '[')

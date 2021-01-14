@@ -7,7 +7,7 @@ from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_
     JM_STRING_LENGTH, JSM_INT_TO_STRING, JSM_INT_PARSE, JSM_BOOLEAN_PARSE, JSM_DOUBLE_PARSE, JSM_DOUBLE_TO_STRING, \
     JSM_BOOLEAN_TO_STRING, JSF_STDIN, JM_PRINT, JSF_STDOUT, JC_BUFF_READER, JM_READLINE, JM_STRING_CONCAT, \
     JM_STRING_EQUALS, JC_INPUT_STREAM_READER, JIM_INPUT_STREAM_READER, JIM_BUFF_READER, JM_STRING_SUBSTRING
-from app.gen.structs import Class
+from app.gen.structs import Class, Method
 from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
     FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING, FN_EOF
 from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
@@ -17,9 +17,11 @@ from app.syntax import Node
 BUFF_READER_FIELD = '$input'
 EOF_FIELD = '$eof'
 
-_locals: Dict[str, int] = {}
-_fields: Dict[str, Tuple[str, str, FieldDescriptor]] = {}
-_class_name: str = ""
+_locals: Dict[str, int]
+_fields: Dict[str, Tuple[str, str, FieldDescriptor]]
+_class_name: str
+_class: Class
+_clinit: Method
 
 
 def _create_field_descriptor(t: Type) -> FieldDescriptor:
@@ -55,8 +57,8 @@ def _create_method_descriptor(params: List[Type], ret: Optional[Type]) -> Method
 
 
 def _statement_while(code: Code, statement):
-    condition = statement[1]
-    block = statement[2]
+    condition = statement['condition']
+    statements = statement['statements']
 
     start = code.pos()
     _expression(code, condition)
@@ -64,7 +66,7 @@ def _statement_while(code: Code, statement):
     code.if_eq()
 
     breaks = []
-    for s in block:
+    for s in statements:
         _statement(code, s, start, breaks)
 
     end_pos = code.pos()
@@ -74,14 +76,14 @@ def _statement_while(code: Code, statement):
 
 
 def _statement_if(code: Code, statement):
-    condition = statement[1]
-    block = statement[2]
+    condition = statement['condition']
+    statements = statement['statements']
 
     _expression(code, condition)
     cond_pos = code.pos()
     code.if_eq()
 
-    for s in block:
+    for s in statements:
         _statement(code, s)
 
     end_pos = code.pos()
@@ -89,22 +91,22 @@ def _statement_if(code: Code, statement):
 
 
 def _statement_if_else(code: Code, statement):
-    condition = statement[1]
-    if_block = statement[2]
-    else_block = statement[3]
+    condition = statement['condition']
+    if_statements = statement['if_statements']
+    else_statements = statement['else_statements']
 
     _expression(code, condition)
     cond_pos = code.pos()
     code.if_eq()
 
-    for s in if_block:
+    for s in if_statements:
         _statement(code, s)
 
     goto_pos = code.pos()
     code.goto()
 
     else_pos = code.pos()
-    for s in else_block:
+    for s in else_statements:
         _statement(code, s)
 
     end_pos = code.pos()
@@ -114,8 +116,8 @@ def _statement_if_else(code: Code, statement):
 
 
 def _statement_return(code: Code, statement):
-    expression = statement[1]
-    t = statement[2]
+    expression = statement['expression']
+    t = statement['type']
 
     if expression:
         _expression(code, expression)
@@ -137,9 +139,9 @@ def _statement_return(code: Code, statement):
 
 
 def _statement_var_def(code: Code, statement):
-    name = statement[1]
-    t = statement[2]
-    expression = statement[3]
+    name = statement['name']
+    t = statement['type']
+    expression = statement['expression']
 
     _expression(code, expression)
 
@@ -164,10 +166,56 @@ def _statement_var_def(code: Code, statement):
     _locals[name] = index
 
 
+def _function_def(statement):
+    name = statement['name']
+    params = statement['parameters']
+    ret = statement['return']
+    statements = statement['statements']
+
+    method_desc = _create_method_descriptor([p['type'] for p in params], ret['type'])
+
+    method = _class.method(name, method_desc)
+
+    # initialize method parameters
+    for p in params:
+        t = p['type']
+        if isinstance(t, TypeInt):
+            index = method.code.variable_int()
+        elif isinstance(t, TypeReal):
+            index = method.code.variable_double()
+        elif isinstance(t, TypeBool):
+            index = method.code.variable_int()
+        elif isinstance(t, TypeStr):
+            index = method.code.variable_reference()
+        elif isinstance(t, TypeArray):
+            index = method.code.variable_reference()
+        else:
+            raise NotImplementedError()
+
+        _locals[name] = index
+
+    for s in statements:
+        _statement(method.code, s)
+
+
+def _constant_def(statement):
+    name = statement['name']
+    const_type = statement['type']
+    expression = statement['expression']
+    descriptor = _create_field_descriptor(const_type)
+
+    code = _clinit.code
+
+    _fields[name] = (_class_name, name, descriptor)
+    _class.field(name, descriptor)
+    _expression(code, expression)
+    code.store_static_field(_class_name, name, descriptor)
+
+
 def _statement_var_store(code: Code, exp):
-    name = exp[1]
-    expression = exp[2]
-    t = exp[3]
+    name = exp['name']
+    expression = exp['expression']
+    t = exp['type']
 
     index = _locals[name]
 
@@ -188,10 +236,10 @@ def _statement_var_store(code: Code, exp):
 
 
 def _statement_array_store(code: Code, exp):
-    name = exp[1]
-    index_exps = exp[2]
-    expression = exp[3]
-    t = exp[4]
+    name = exp['name']
+    index_exps = exp['indexes']
+    expression = exp['expression']
+    t = exp['type']
 
     # top array load
     index = _locals[name]
@@ -220,7 +268,7 @@ def _statement_array_store(code: Code, exp):
 
 
 def _statement_function_call(code: Code, exp):
-    ret = exp[4]
+    ret = exp['return_type']
     _exp_function_call(code, exp)
 
     if isinstance(ret, TypeInt) \
@@ -232,39 +280,52 @@ def _statement_function_call(code: Code, exp):
         code.pop2()
 
 
+def _top_statement(statement):
+    node_type = statement['node']
+
+    if node_type == Node.FUNCTION_DEFINITION:
+        _function_def(statement)
+    elif node_type == Node.CONSTANT_DEFINITION:
+        _constant_def(statement)
+    else:
+        raise NotImplementedError()
+
+
 def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: Optional[List[int]] = None):
-    if statement[0] == Node.VARIABLE_DEFINITION:
+    node_type = statement['node']
+
+    if node_type == Node.VARIABLE_DEFINITION:
         _statement_var_def(code, statement)
-    elif statement[0] == Node.CONSTANT_DEFINITION:
+    elif node_type == Node.CONSTANT_DEFINITION:
         _statement_var_def(code, statement)
-    elif statement[0] == Node.VARIABLE_STORE:
+    elif node_type == Node.VARIABLE_STORE:
         _statement_var_store(code, statement)
-    elif statement[0] == Node.ARRAY_STORE:
+    elif node_type == Node.ARRAY_STORE:
         _statement_array_store(code, statement)
-    elif statement[0] == Node.FUNCTION_CALL:
+    elif node_type == Node.FUNCTION_CALL:
         _statement_function_call(code, statement)
-    elif statement[0] == Node.RETURN:
+    elif node_type == Node.RETURN:
         _statement_return(code, statement)
-    elif statement[0] == Node.IF:
+    elif node_type == Node.IF:
         _statement_if(code, statement)
-    elif statement[0] == Node.IF_ELSE:
+    elif node_type == Node.IF_ELSE:
         _statement_if_else(code, statement)
-    elif statement[0] == Node.WHILE:
+    elif node_type == Node.WHILE:
         _statement_while(code, statement)
-    elif statement[0] == Node.BREAK:
+    elif node_type == Node.BREAK:
         break_pos = code.pos()
         code.goto()
         breaks.append(break_pos)
-    elif statement[0] == Node.CONTINUE:
+    elif node_type == Node.CONTINUE:
         code.goto(loop_start)
     else:
         raise NotImplementedError()
 
 
 def _exp_uminus(code: Code, exp):
-    right = exp[1]
-    t = exp[2]
-    _expression(code, right)
+    expression = exp['expression']
+    t = exp['type']
+    _expression(code, expression)
 
     if isinstance(t, TypeInt):
         code.neg_int()
@@ -280,9 +341,9 @@ def _exp_uplus(code: Code, exp):
 
 
 def _exp_mul(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -295,9 +356,9 @@ def _exp_mul(code: Code, exp):
 
 
 def _exp_div(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -310,9 +371,9 @@ def _exp_div(code: Code, exp):
 
 
 def _exp_plus(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -327,9 +388,9 @@ def _exp_plus(code: Code, exp):
 
 
 def _exp_minus(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -342,9 +403,9 @@ def _exp_minus(code: Code, exp):
 
 
 def _exp_sub(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -357,9 +418,9 @@ def _exp_sub(code: Code, exp):
 
 
 def _exp_eq(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -387,9 +448,9 @@ def _exp_eq(code: Code, exp):
 
 
 def _exp_ne(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -428,9 +489,9 @@ def _exp_ne(code: Code, exp):
 
 
 def _exp_lt(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -456,9 +517,9 @@ def _exp_lt(code: Code, exp):
 
 
 def _exp_gt(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -484,9 +545,9 @@ def _exp_gt(code: Code, exp):
 
 
 def _exp_le(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -512,9 +573,9 @@ def _exp_le(code: Code, exp):
 
 
 def _exp_ge(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -541,7 +602,7 @@ def _exp_ge(code: Code, exp):
 
 def _exp_not(code: Code, exp):
     r = exp[2]
-    t = exp[3]
+    t = exp['type']
     _expression(code, r)
 
     if isinstance(t, TypeBool):
@@ -561,9 +622,9 @@ def _exp_not(code: Code, exp):
 
 
 def _exp_and(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -587,9 +648,9 @@ def _exp_and(code: Code, exp):
 
 
 def _exp_or(code: Code, exp):
-    left = exp[1]
-    right = exp[2]
-    t = exp[3]
+    left = exp['left']
+    right = exp['right']
+    t = exp['type']
     _expression(code, left)
     _expression(code, right)
 
@@ -613,8 +674,8 @@ def _exp_or(code: Code, exp):
 
 
 def _exp_var_load(code: Code, exp):
-    name = exp[1]
-    t = exp[2]
+    name = exp['name']
+    t = exp['type']
 
     index = _locals.get(name)
     if index:
@@ -636,9 +697,9 @@ def _exp_var_load(code: Code, exp):
 
 
 def _exp_array_load(code: Code, exp):
-    array_exp = exp[1]
-    index_exps = exp[2]
-    t = exp[3]
+    array_exp = exp['expression']
+    index_exps = exp['indexes']
+    t = exp['type']
 
     _expression(code, array_exp)
 
@@ -664,8 +725,8 @@ def _exp_array_load(code: Code, exp):
 
 
 def _exp_value_array(code: Code, exp):
-    expressions = exp[1]
-    t = exp[2]
+    items = exp['items']
+    t = exp['type']
 
     if t.dim > 1:
         desc = _create_field_descriptor(TypeArray(t.dim - 1, t.inner))
@@ -674,10 +735,10 @@ def _exp_value_array(code: Code, exp):
 
     code.new_array(desc)
 
-    for (i, e) in enumerate(expressions):
+    for (i, item) in enumerate(items):
         code.dup()
         code.const_int(i)
-        _expression(code, e)
+        _expression(code, item)
         if isinstance(t.inner, TypeInt):
             code.array_store_int()
         elif isinstance(t.inner, TypeReal):
@@ -693,9 +754,9 @@ def _exp_value_array(code: Code, exp):
 
 
 def _exp_var_assign(code: Code, exp):
-    name = exp[1]
-    expression = exp[2]
-    t = exp[3]
+    name = exp['name']
+    expression = exp['expression']
+    t = exp['type']
 
     index = _locals[name]
     _expression(code, expression)
@@ -720,10 +781,10 @@ def _exp_var_assign(code: Code, exp):
 
 
 def _exp_array_assign(code: Code, exp):
-    name = exp[1]
-    index_exps = exp[2]
-    expression = exp[3]
-    t = exp[4]
+    name = exp['name']
+    index_exps = exp['indexes']
+    expression = exp['expression']
+    t = exp['type']
 
     # top array load
     index = _locals[name]
@@ -757,10 +818,10 @@ def _exp_array_assign(code: Code, exp):
 
 
 def _exp_function_call(code: Code, exp):
-    name = exp[1]
-    args_exps = exp[2]
-    params = exp[3]
-    ret = exp[4]
+    name = exp['name']
+    args_exps = exp['arguments']
+    params = exp['parameters_types']
+    ret = exp['return_type']
 
     for e in args_exps:
         _expression(code, e)
@@ -877,74 +938,76 @@ def _exp_function_call(code: Code, exp):
 
 
 def _expression(code: Code, expression):
-    if expression[0] == Node.UMINUS:
+    node_type = expression['node']
+
+    if node_type == Node.UMINUS:
         _exp_uminus(code, expression)
-    elif expression[0] == Node.UPLUS:
+    elif node_type == Node.UPLUS:
         _exp_uplus(code, expression)
-    elif expression[0] == Node.MUL:
+    elif node_type == Node.MUL:
         _exp_mul(code, expression)
-    elif expression[0] == Node.DIV:
+    elif node_type == Node.DIV:
         _exp_div(code, expression)
-    elif expression[0] == Node.PLUS:
+    elif node_type == Node.PLUS:
         _exp_plus(code, expression)
-    elif expression[0] == Node.MINUS:
+    elif node_type == Node.MINUS:
         _exp_minus(code, expression)
-    elif expression[0] == Node.EQ:
+    elif node_type == Node.EQ:
         _exp_eq(code, expression)
-    elif expression[0] == Node.NE:
+    elif node_type == Node.NE:
         _exp_ne(code, expression)
-    elif expression[0] == Node.LT:
+    elif node_type == Node.LT:
         _exp_lt(code, expression)
-    elif expression[0] == Node.GT:
+    elif node_type == Node.GT:
         _exp_gt(code, expression)
-    elif expression[0] == Node.LE:
+    elif node_type == Node.LE:
         _exp_le(code, expression)
-    elif expression[0] == Node.GE:
+    elif node_type == Node.GE:
         _exp_ge(code, expression)
-    elif expression[0] == Node.NOT:
+    elif node_type == Node.NOT:
         _exp_not(code, expression)
-    elif expression[0] == Node.AND:
+    elif node_type == Node.AND:
         _exp_and(code, expression)
-    elif expression[0] == Node.OR:
+    elif node_type == Node.OR:
         _exp_or(code, expression)
-    elif expression[0] == Node.VARIABLE_LOAD:
+    elif node_type == Node.VARIABLE_LOAD:
         _exp_var_load(code, expression)
-    elif expression[0] == Node.ARRAY_LOAD:
+    elif node_type == Node.ARRAY_LOAD:
         _exp_array_load(code, expression)
-    elif expression[0] == Node.VARIABLE_ASSIGNMENT:
+    elif node_type == Node.VARIABLE_ASSIGNMENT:
         _exp_var_assign(code, expression)
-    elif expression[0] == Node.ARRAY_ASSIGNMENT:
+    elif node_type == Node.ARRAY_ASSIGNMENT:
         _exp_array_assign(code, expression)
-    elif expression[0] == Node.VALUE_INT:
-        code.const_int(expression[1])
-    elif expression[0] == Node.VALUE_REAL:
-        code.const_double(expression[1])
-    elif expression[0] == Node.VALUE_BOOL:
-        code.const_int(int(expression[1]))
-    elif expression[0] == Node.VALUE_STR:
-        code.const_string(expression[1])
-    elif expression[0] == Node.VALUE_ARRAY:
+    elif node_type == Node.VALUE_INT:
+        code.const_int(expression['value'])
+    elif node_type == Node.VALUE_REAL:
+        code.const_double(expression['value'])
+    elif node_type == Node.VALUE_BOOL:
+        code.const_int(int(expression['value']))
+    elif node_type == Node.VALUE_STR:
+        code.const_string(expression['value'])
+    elif node_type == Node.VALUE_ARRAY:
         _exp_value_array(code, expression)
-    elif expression[0] == Node.FUNCTION_CALL_VALUE:
+    elif node_type == Node.FUNCTION_CALL_VALUE:
         _exp_function_call(code, expression)
     else:
         raise NotImplementedError()
 
 
-def _generate_clinit(cls: Class, constants):
+def _generate_clinit():
     global _fields
     _fields = {}
 
-    clinit = cls.method(J_CLINIT_NAME, J_CLINIT_DESCRIPTOR)
-    code = clinit.code
+    _clinit = _class.method(J_CLINIT_NAME, J_CLINIT_DESCRIPTOR)
+    code = _clinit.code
 
     # generate eof indicator
-    cls.field(EOF_FIELD, BooleanDesc())
+    _class.field(EOF_FIELD, BooleanDesc())
     code.const_int(0)
     code.store_static_field(_class_name, EOF_FIELD, BooleanDesc())
 
     # generate input buff reader
-    cls.field(BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
+    _class.field(BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
     code.new(JC_BUFF_READER)
     code.dup()
     code.new(JC_INPUT_STREAM_READER)
@@ -954,39 +1017,14 @@ def _generate_clinit(cls: Class, constants):
     code.invoke_special(*JIM_BUFF_READER)
     code.store_static_field(_class_name, BUFF_READER_FIELD, JC_BUFF_READER)
 
-    # generate constants fields
-    for c in constants:
-        name = c[1]
-        const_type = c[2]
-        expression = c[3]
-        descriptor = _create_field_descriptor(const_type)
 
-        _fields[name] = (_class_name, name, descriptor)
-        cls.field(name, descriptor)
-        _expression(code, expression)
-        code.store_static_field(_class_name, name, descriptor)
-
+def _close_clinit():
+    code = _clinit.code
     code.return_void()
 
 
-def _generate_functions(cls: Class, functions):
-    for f in functions:
-        _locals.clear()
-
-        name = f[1]
-        params = f[2]
-        ret = f[3]
-        statements = f[4]
-
-        method_desc = _create_method_descriptor(params, ret)
-
-        method = cls.method(name, method_desc)
-        for s in statements:
-            _statement(method.code, s)
-
-
-def _generate_main(cls: Class):
-    method = cls.method(J_MAIN_NAME, J_MAIN_DESCRIPTOR)
+def _generate_main():
+    method = _class.method(J_MAIN_NAME, J_MAIN_DESCRIPTOR)
     method.code.invoke_static(_class_name, FN_MAIN, _create_method_descriptor(FN_MAIN_PARAMS, FN_MAIN_RETURN))
     method.code.return_void()
 
@@ -994,23 +1032,22 @@ def _generate_main(cls: Class):
 def generate(class_name: str, ast) -> Class:
     global _class_name
     global _fields
+    global _locals
+    global _class
+
+    _locals = {}
+    _fields = {}
 
     _class_name = class_name
     _class_name = class_name
-    cls = Class(class_name)
-    constants = []
-    functions = []
+    _class = Class(class_name)
 
-    for node in ast[1]:
-        if node[0] == Node.CONSTANT_DEFINITION:
-            constants.append(node)
-        elif node[0] == Node.FUNCTION_DEFINITION:
-            functions.append(node)
-        else:
-            NotImplementedError()
+    _generate_clinit()
 
-    _generate_main(cls)
-    _generate_clinit(cls, constants)
-    _generate_functions(cls, functions)
+    for node in ast['statements']:
+        _top_statement(node)
 
-    return cls
+    _generate_main()
+    _close_clinit()
+
+    return _class

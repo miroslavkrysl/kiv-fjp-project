@@ -21,9 +21,9 @@ def p_program(p):
                 | definitions function_definition
     """
     if len(p) <= 1:
-        p[0] = [Node.PROGRAM, []]
+        p[0] = {'node': Node.PROGRAM, 'statements': []}
     else:
-        p[0] = [Node.PROGRAM, [*p[1][1], p[2]]]
+        p[0] = {'node': Node.PROGRAM, 'statements': [*p[1]['statements'], p[2]]}
 
 
 def p_statements(p):
@@ -53,11 +53,11 @@ def p_function_definition(p):
     function_definition : FN IDENTIFIER LPAREN parameters RPAREN LBRACE statements RBRACE
                         | FN IDENTIFIER LPAREN parameters RPAREN COLON type LBRACE statements RBRACE
     """
-    ret = None if len(p) == 9 else p[7]
+    ret = {'node': Node.TYPE_VOID} if len(p) == 9 else p[7]
     statements = p[7] if len(p) == 9 else p[9]
 
     # (node, name, [parameters], return, [statements])
-    p[0] = [Node.FUNCTION_DEFINITION, p[2], p[4], ret, statements]
+    p[0] = {'node': Node.FUNCTION_DEFINITION, 'name': p[2], 'parameters': p[4], 'return': ret, 'statements': statements}
 
 
 def p_parameters(p):
@@ -86,21 +86,21 @@ def p_parameter(p):
     """
     parameter   : IDENTIFIER COLON type
     """
-    p[0] = (p[1], p[3])
+    p[0] = {'node': Node.PARAM, 'name': p[1], 'type': p[3]}
 
 
 def p_function_call(p):
     """
     function_call   : IDENTIFIER LPAREN arguments RPAREN
     """
-    p[0] = [Node.FUNCTION_CALL, p[1], p[3]]
+    p[0] = {'node': Node.FUNCTION_CALL, 'name': p[1], 'arguments': p[3]}
 
 
 def p_function_call_value(p):
     """
     function_call_value : function_call
     """
-    p[0] = [Node.FUNCTION_CALL_VALUE, p[1][1], p[1][3]]
+    p[0] = {'node': Node.FUNCTION_CALL_VALUE, 'name': p[1]['name'], 'arguments': p[1]['arguments']}
 
 
 def p_arguments(p):
@@ -128,8 +128,12 @@ def p_arguments_list(p):
 def p_return(p):
     """
     return  : RETURN expression
+            | RETURN
     """
-    p[0] = [Node.RETURN, p[2]]
+    if len(p) == 3:
+        p[0] = {'node': Node.RETURN, 'expression': p[2]}
+    else:
+        p[0] = {'node': Node.RETURN_VOID}
 
 
 # --- Types ---
@@ -149,38 +153,38 @@ def p_type_int(p):
     """
     type_int : TYPE_INT
     """
-    p[0] = [Node.TYPE_INT,]
+    p[0] = {'node': Node.TYPE_INT}
 
 
 def p_type_real(p):
     """
     type_real    : TYPE_REAL
     """
-    p[0] = [Node.TYPE_REAL,]
+    p[0] = {'node': Node.TYPE_REAL}
 
 
 def p_type_bool(p):
     """
     type_bool    : TYPE_BOOL
     """
-    p[0] = [Node.TYPE_BOOL,]
+    p[0] = {'node': Node.TYPE_BOOL}
 
 
 def p_type_str(p):
     """
     type_str : TYPE_STR
     """
-    p[0] = [Node.TYPE_STR,]
+    p[0] = {'node': Node.TYPE_STR}
 
 
 def p_type_array(p):
     """
     type_array   : LBRACKET type RBRACKET
     """
-    if p[2][0] == Node.TYPE_ARRAY:
-        p[0] = [Node.TYPE_ARRAY, p[2][1] + 1, p[2][2]]
+    if p[2]['node'] == Node.TYPE_ARRAY:
+        p[0] = {'node': Node.TYPE_ARRAY, 'dim': p[2]['dim'] + 1, 'inner': p[2]['inner']}
     else:
-        p[0] = [Node.TYPE_ARRAY, 1, p[2]]
+        p[0] = {'node': Node.TYPE_ARRAY, 'dim': 1, 'inner': p[2]}
 
 
 # --- Conditions ---
@@ -189,14 +193,14 @@ def p_if(p):
     """
     if  : IF expression LBRACE statements RBRACE
     """
-    p[0] = [Node.IF, p[2], p[4]]
+    p[0] = {'node': Node.IF, 'condition': p[2], 'statements': p[4]}
 
 
 def p_if_else(p):
     """
     if_else : IF expression LBRACE statements RBRACE ELSE LBRACE statements RBRACE
     """
-    p[0] = [Node.IF_ELSE, p[2], p[4], p[8]]
+    p[0] = {'node': Node.IF_ELSE, 'condition': p[2], 'if_statements': p[4], 'else_statements': p[8]}
 
 
 # --- Cycles ---
@@ -205,21 +209,21 @@ def p_while(p):
     """
     while   : WHILE expression LBRACE statements RBRACE
     """
-    p[0] = [Node.WHILE, p[2], p[4]]
+    p[0] = {'node': Node.WHILE, 'condition': p[2], 'statements': p[4]}
 
 
 def p_break(p):
     """
     break   : BREAK
     """
-    p[0] = [Node.BREAK,]
+    p[0] = {'node': Node.BREAK}
 
 
 def p_continue(p):
     """
     continue    : CONTINUE
     """
-    p[0] = [Node.CONTINUE,]
+    p[0] = {'node': Node.CONTINUE}
 
 
 # --- Expressions ---
@@ -270,115 +274,115 @@ def p_assignment(p):
     """
     assignment : store
     """
-    if p[1][0] == Node.VARIABLE_STORE:
-        p[0] = [Node.VARIABLE_ASSIGNMENT, p[1][1], p[1][2]]
+    if p[1]['node'] == Node.VARIABLE_STORE:
+        p[0] = {'node': Node.VARIABLE_ASSIGNMENT, 'name': p[1]['name'], 'expression': p[1]['expression']}
     else:
-        p[0] = [Node.ARRAY_ASSIGNMENT, p[1][1], p[1][2], p[1][3]]
+        p[0] = {'node': Node.ARRAY_ASSIGNMENT, 'name': p[1]['name'], 'indexes': p[1]['indexes'], 'expression': p[1]['expression']}
 
 
 def p_uplus(p):
     """
     uplus   : PLUS expression %prec UPLUS
     """
-    p[0] = [Node.UPLUS, p[2]]
+    p[0] = {'node': Node.UPLUS, 'expression': p[2]}
 
 
 def p_uminus(p):
     """
     uminus  : MINUS expression %prec UMINUS
     """
-    p[0] = [Node.UMINUS, p[2]]
+    p[0] = {'node': Node.UMINUS, 'expression': p[2]}
 
 
 def p_mul(p):
     """
     mul : expression MUL expression
     """
-    p[0] = [Node.MUL, p[1], p[3]]
+    p[0] = {'node': Node.MUL, 'left': p[1], 'right': p[3]}
 
 
 def p_div(p):
     """
     div : expression DIV expression
     """
-    p[0] = [Node.DIV, p[1], p[3]]
+    p[0] = {'node': Node.DIV, 'left': p[1], 'right': p[3]}
 
 
 def p_plus(p):
     """
     plus    : expression PLUS expression
     """
-    p[0] = [Node.PLUS, p[1], p[3]]
+    p[0] = {'node': Node.PLUS, 'left': p[1], 'right': p[3]}
 
 
 def p_minus(p):
     """
     minus   : expression MINUS expression
     """
-    p[0] = [Node.MINUS, p[1], p[3]]
+    p[0] = {'node': Node.MINUS, 'left': p[1], 'right': p[3]}
 
 
 def p_eq(p):
     """
     eq  : expression EQ expression
     """
-    p[0] = [Node.EQ, p[1], p[3]]
+    p[0] = {'node': Node.EQ, 'left': p[1], 'right': p[3]}
 
 
 def p_ne(p):
     """
     ne  : expression NE expression
     """
-    p[0] = [Node.NE, p[1], p[3]]
+    p[0] = {'node': Node.NE, 'left': p[1], 'right': p[3]}
 
 
 def p_lt(p):
     """
     lt  : expression LT expression
     """
-    p[0] = [Node.LT, p[1], p[3]]
+    p[0] = {'node': Node.LT, 'left': p[1], 'right': p[3]}
 
 
 def p_gt(p):
     """
     gt  : expression GT expression
     """
-    p[0] = [Node.GT, p[1], p[3]]
+    p[0] = {'node': Node.GT, 'left': p[1], 'right': p[3]}
 
 
 def p_le(p):
     """
     le  : expression LE expression
     """
-    p[0] = [Node.LE, p[1], p[3]]
+    p[0] = {'node': Node.LE, 'left': p[1], 'right': p[3]}
 
 
 def p_ge(p):
     """
     ge  : expression GE expression
     """
-    p[0] = [Node.GE, p[1], p[3]]
+    p[0] = {'node': Node.GE, 'left': p[1], 'right': p[3]}
 
 
 def p_not(p):
     """
     not : NOT expression
     """
-    p[0] = [Node.NOT, p[2]]
+    p[0] = {'node': Node.NOT, 'expression': p[2]}
 
 
 def p_and(p):
     """
     and : expression AND expression
     """
-    p[0] = [Node.AND, p[1], p[3]]
+    p[0] = {'node': Node.AND, 'left': p[1], 'right': p[3]}
 
 
 def p_or(p):
     """
     or  : expression OR expression
     """
-    p[0] = [Node.OR, p[1], p[3]]
+    p[0] = {'node': Node.OR, 'left': p[1], 'right': p[3]}
 
 
 # --- Variables ---
@@ -387,7 +391,7 @@ def p_variable_definition(p):
     """
     variable_definition : VAR IDENTIFIER COLON type ASSIGN expression
     """
-    p[0] = [Node.VARIABLE_DEFINITION, p[2], p[4], p[6]]
+    p[0] = {'node': Node.VARIABLE_DEFINITION, 'name': p[2], 'type': p[4], 'expression': p[6]}
 
 
 def p_constant_definition(p):
@@ -395,7 +399,7 @@ def p_constant_definition(p):
     constant_definition : CONST IDENTIFIER COLON type ASSIGN expression
     """
     # (node, name, type, expression)
-    p[0] = [Node.CONSTANT_DEFINITION, p[2], p[4], p[6]]
+    p[0] = {'node': Node.CONSTANT_DEFINITION, 'name': p[2], 'type': p[4], 'expression': p[6]}
 
 
 def p_load(p):
@@ -404,9 +408,9 @@ def p_load(p):
             | expression array_access
     """
     if len(p) == 2:
-        p[0] = [Node.VARIABLE_LOAD, p[1]]
+        p[0] = {'node': Node.VARIABLE_LOAD, 'name': p[1]}
     else:
-        p[0] = [Node.ARRAY_LOAD, p[1], p[2]]
+        p[0] = {'node': Node.ARRAY_LOAD, 'expression': p[1], 'indexes': p[2]}
 
 
 def p_store(p):
@@ -415,9 +419,9 @@ def p_store(p):
             | IDENTIFIER array_access ASSIGN expression
     """
     if len(p) == 4:
-        p[0] = [Node.VARIABLE_STORE, p[1], p[3]]
+        p[0] = {'node': Node.VARIABLE_STORE, 'name': p[1], 'expression': p[3]}
     else:
-        p[0] = [Node.ARRAY_STORE, p[1], p[2], p[4]]
+        p[0] = {'node': Node.ARRAY_STORE, 'name': p[1], 'indexes': p[2], 'expression': p[4]}
 
 
 def p_array_access(p):
@@ -448,35 +452,35 @@ def p_value_int(p):
     """
     value_int : LITERAL_INT
     """
-    p[0] = [Node.VALUE_INT, p[1]]
+    p[0] = {'node': Node.VALUE_INT, 'value': p[1]}
 
 
 def p_value_real(p):
     """
     value_real    : LITERAL_REAL
     """
-    p[0] = [Node.VALUE_REAL, p[1]]
+    p[0] = {'node': Node.VALUE_REAL, 'value': p[1]}
 
 
 def p_value_bool(p):
     """
     value_bool    : LITERAL_BOOL
     """
-    p[0] = [Node.VALUE_BOOL, p[1]]
+    p[0] = {'node': Node.VALUE_BOOL, 'value': p[1]}
 
 
 def p_value_str(p):
     """
     value_str : LITERAL_STR
     """
-    p[0] = [Node.VALUE_STR, p[1]]
+    p[0] = {'node': Node.VALUE_STR, 'value': p[1]}
 
 
 def p_value_array(p):
     """
     value_array   : LBRACKET items RBRACKET
     """
-    p[0] = [Node.VALUE_ARRAY, p[2]]
+    p[0] = {'node': Node.VALUE_ARRAY, 'items': p[2]}
 
 
 def p_items(p):
@@ -509,5 +513,7 @@ def p_error(p):
         print(f"Syntax error [{p.lexer.lexpos}]")
     else:
         print("Unexpected end of input")
+
+    raise SyntaxError()
 
     # print("Syntax error in input!")
