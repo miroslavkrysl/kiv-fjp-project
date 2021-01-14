@@ -9,12 +9,13 @@ from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_
     JM_STRING_EQUALS, JC_INPUT_STREAM_READER, JIM_INPUT_STREAM_READER, JIM_BUFF_READER, JM_STRING_SUBSTRING
 from app.gen.structs import Class
 from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
-    FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING
-from app.typing import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
+    FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING, FN_EOF
+from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
 from app.syntax import Node
 
 
 BUFF_READER_FIELD = '$input'
+EOF_FIELD = '$eof'
 
 _locals: Dict[str, int] = {}
 _fields: Dict[str, Tuple[str, str, FieldDescriptor]] = {}
@@ -852,11 +853,23 @@ def _exp_function_call(code: Code, exp):
             return
 
     if name == FN_READ_LINE and len(params) == 0:
-        if isinstance(params[0], TypeStr):
-            code.load_static_field(_class_name, BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
-            code.swap()
-            code.invoke_virtual(*JM_READLINE)
-            return
+        code.load_static_field(_class_name, BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
+        code.swap()
+        code.invoke_virtual(*JM_READLINE)
+
+        # if result null, set the eof field to true and load empty string
+        cmp_pos = code.pos()
+        code.if_non_null()
+        code.const_int(1)
+        code.store_static_field(_class_name, EOF_FIELD, BooleanDesc())
+        code.const_string('')
+        end_pos = code.pos()
+        code.update_jump(cmp_pos, end_pos)
+        return
+
+    if name == FN_EOF and len(params) == 0:
+        code.load_static_field(_class_name, EOF_FIELD, BooleanDesc())
+        return
 
     # custom function
     desc = _create_method_descriptor(params, ret)
@@ -925,6 +938,11 @@ def _generate_clinit(cls: Class, constants):
     clinit = cls.method(J_CLINIT_NAME, J_CLINIT_DESCRIPTOR)
     code = clinit.code
 
+    # generate eof indicator
+    cls.field(EOF_FIELD, BooleanDesc())
+    code.const_int(0)
+    code.store_static_field(_class_name, EOF_FIELD, BooleanDesc())
+
     # generate input buff reader
     cls.field(BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
     code.new(JC_BUFF_READER)
@@ -936,7 +954,7 @@ def _generate_clinit(cls: Class, constants):
     code.invoke_special(*JIM_BUFF_READER)
     code.store_static_field(_class_name, BUFF_READER_FIELD, JC_BUFF_READER)
 
-    # generate contants fields
+    # generate constants fields
     for c in constants:
         name = c[1]
         const_type = c[2]
