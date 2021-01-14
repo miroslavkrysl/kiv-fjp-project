@@ -49,7 +49,7 @@ def main():
 
     print_tree(result)
     app.sem.analyze(result)
-    cls = generate("Main", result)
+    # cls = generate("Main", result)
 
 
 if __name__ == '__main__':

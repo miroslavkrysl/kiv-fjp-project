@@ -58,15 +58,14 @@ class Node(Enum):
     VARIABLE_ASSIGNMENT = auto()
     ARRAY_ASSIGNMENT = auto()
     VARIABLE_DEFINITION = auto()
-
     CONSTANT_DEFINITION = auto()
+
     # Types
     TYPE_INT = auto()
     TYPE_REAL = auto()
     TYPE_BOOL = auto()
     TYPE_STR = auto()
     TYPE_ARRAY = auto()
-
     TYPE_VOID = auto()
 
     def __str__(self):

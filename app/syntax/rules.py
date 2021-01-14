@@ -10,7 +10,8 @@ precedence = (
     ('left', 'EQ', 'NE', 'LT', 'GT', 'LE', 'GE'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'MUL', 'DIV'),
-    ('right', 'UMINUS', 'UPLUS')
+    ('right', 'UMINUS', 'UPLUS'),
+    ('right', 'LBRACKET', 'RBRACKET')
 )
 
 
@@ -405,12 +406,22 @@ def p_constant_definition(p):
 def p_load(p):
     """
     load    : IDENTIFIER
-            | expression array_access
+            | IDENTIFIER array_access
     """
     if len(p) == 2:
         p[0] = {'node': Node.VARIABLE_LOAD, 'name': p[1]}
     else:
-        p[0] = {'node': Node.ARRAY_LOAD, 'expression': p[1], 'indexes': p[2]}
+        p[0] = {'node': Node.ARRAY_LOAD, 'name': p[1], 'indexes': p[2]}
+
+
+def p_var(p):
+    """
+    var     : IDENTIFIER
+    """
+    if len(p) == 4:
+        p[0] = {'node': Node.VARIABLE_STORE, 'name': p[1], 'expression': p[3]}
+    else:
+        p[0] = {'node': Node.ARRAY_STORE, 'name': p[1], 'indexes': p[2], 'expression': p[4]}
 
 
 def p_store(p):

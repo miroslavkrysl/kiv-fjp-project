@@ -144,7 +144,7 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
     if params:
         for p in params:
             name = p['name']
-            t = _node_to_type(p['type'])
+            t = p['type']
             var = _get_var(name)
             if var is not None:
                 _errors.append(f'Variable \'{name}\' is already defined.')
@@ -166,13 +166,19 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
             ret = statement['return']
             stmts = statement['statements']
 
-            params_types = [_node_to_type(p['type']) for p in params]
+            params_types = []
+            for p in params:
+                t = _node_to_type(p['type'])
+                p['type'] = t
+                params_types.append(t)
+
             fn = _get_func(name, params_types)
             if fn is not None:
                 _errors.append(f'Function \'{name}({", ".join(str(t) for t in params_types)})\' is already defined.')
                 break
 
             ret_type = _node_to_type(ret)
+            ret['return'] = ret_type
             _add_func(name, params_types, ret_type)
             if not _analyze_layer(stmts, in_loop, ret_type, params):
                 break
@@ -304,6 +310,7 @@ def _validate_expression(expression) -> Optional[Type]:
     :param expression: The expression.
     :return: Result type or None on failure
     """
+    print(expression)
     node_type = expression['node']
 
     if node_type == Node.VALUE_INT \
@@ -344,12 +351,16 @@ def _validate_expression(expression) -> Optional[Type]:
         return _validate_var_store(expression)
 
     elif node_type == Node.ARRAY_LOAD:
-        exp = expression['expression']
+        name = expression['name']
         indexes = expression['indexes']
-        exp_type = _validate_expression(exp)
 
-        expression['type'] = exp_type
-        return _validate_array_access(exp_type, indexes)
+        var = _get_var(name)
+        if var is None:
+            _errors.append(f'Variable \'{name}\' is not defined.')
+            return None
+
+        expression['type'] = var[0]
+        return _validate_array_access(var[0], indexes)
 
     elif node_type == Node.ARRAY_ASSIGNMENT:
         return _validate_array_store(expression)
@@ -377,8 +388,8 @@ def _validate_function_call(expression) -> Optional[Type]:
         _errors.append(f'Undefined function \'{name}({", ".join(str(t) for t in args_types)})\'.')
         return None
 
-    expression['parameters_types'] = args_types
-    expression['return_type'] = fn_ret
+    expression['parameters'] = args_types
+    expression['return'] = fn_ret
     return fn_ret
 
 
@@ -432,7 +443,7 @@ def _validate_array_store(expression) -> Optional[Type]:
 
 def _validate_array_access(exp_type: Type, indexes_exps) -> Optional[Type]:
     if not isinstance(exp_type, TypeArray):
-        _errors.append(f'Can not use array access on non-array type (name).')
+        _errors.append(f'Can not use array access on non-array type ({exp_type}).')
         return None
 
     indexes_types = [_validate_expression(i) for i in indexes_exps]
@@ -538,16 +549,17 @@ def _validate_array_value(expression) -> Optional[TypeArray]:
         return t
 
 
-def _array_type_inference(expression, top_type: TypeArray):
+def _array_type_inference(expression, top_type: Type):
     """
     Walk through the array value expression tree and replace
     inner Any types for the top type.
     :param expression: The array value expression node.
     :param top_type: Type of the top expression.
     """
-    if expression['node'] != Node.VALUE_ARRAY:
+    if expression['node'] != Node.VALUE_ARRAY or not isinstance(top_type, TypeArray):
         return
 
+    print(expression)
     dim = expression['type'].dim
     expression['type'] = TypeArray(dim, top_type.inner)
 
