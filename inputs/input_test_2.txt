@@ -1,46 +1,50 @@
-fn partition(A:[Int], lo:Int, hi:Int):Int {
-	var pivot:Int = A[hi];
-	var i:Int = lo;
-	var j:Int = lo;
-	while j < hi {
-		if A[j] < pivot {
-			var x:Int = A[i];
-			A[i] = A[j];
-			A[j] = x;
-			i = i + 1;
-		}
-	}
-
-	var x:Int = A[i];	
-	A[i] = A[hi];
-	A[hi] = A[i];
-
-	return i;
+fn swap(array: [Int], left: Int, right: Int) {
+    var tmp: Int = array[right];
+    array[right] = array[left];
+    array[left] = tmp;
+    return;
 }
 
-fn quicksort(A:[Int], lo:Int, hi:Int) {
-	var p:Int = 0;
-	if lo < hi {
-		p = partition(A, lo, hi);
-		quicksort(A, lo, p - 1);
-		quicksort(A, p + 1, hi);
-	}	
+fn quicksort(array: [Int], left: Int, right: Int) {
+    if(left < right){
+        var boundary: Int = left;
+        var i: Int = left + 1;
+        while i < right {
+            if array[i] < array[left] {
+                boundary = boundary + 1;
+                swap(array, i, boundary);
+            }
+
+            i = i + 1;
+        }
+        swap(array, left, boundary);
+        quicksort(array, left, boundary);
+        quicksort(array, boundary + 1, right);
+    }
+
+    return;
 }
 
 fn main() {
 	var pole:[Int] = [4,7,2,1,8];
-	
+
+    write("original:\n");
 	var k :Int = 0;
 	while k < len(pole) {
 		write(str(pole[k]) + "\n");
 		k = k + 1;
 	}
 
+	write("\n");
+
 	quicksort(pole, 0, len(pole));
 
+    write("sorted:\n");
 	k = 0;
 	while k < len(pole) {
 		write(str(pole[k]) + "\n");
 		k = k + 1;
 	}
+
+	return;
 }
