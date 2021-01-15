@@ -87,6 +87,9 @@ def t_LITERAL_STR(t):
     """
     t.value = str(t.value)
 
+    # remove quotation marks
+    t.value = t.value[1:-1]
+
     # replace all \n for real newlines
     t.value = replace_escapes(t.value)
     return t
