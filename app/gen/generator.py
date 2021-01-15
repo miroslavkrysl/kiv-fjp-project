@@ -186,23 +186,11 @@ def _function_def(statement):
     method = _class.method(name, method_desc)
 
     # initialize method parameters
-    for p in params:
-        name = p['name']
-        t = p['type']
-        if isinstance(t, TypeInt):
-            index = method.code.variable_int()
-        elif isinstance(t, TypeReal):
-            index = method.code.variable_double()
-        elif isinstance(t, TypeBool):
-            index = method.code.variable_int()
-        elif isinstance(t, TypeStr):
-            index = method.code.variable_reference()
-        elif isinstance(t, TypeArray):
-            index = method.code.variable_reference()
-        else:
-            raise NotImplementedError()
-
-        _locals[name] = index
+    local_index = 0
+    for (param, local_type) in zip(params, method.code.locals):
+        name = param['name']
+        _locals[name] = local_index
+        local_index += local_type.size()
 
     for s in statements:
         _statement(method.code, s)

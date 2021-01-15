@@ -26,6 +26,7 @@ class Code:
         self._constant_pool = constant_pool
         self._instructions: List[Any] = []
         self._locals: List[JOperandType] = []
+        self._locals_size: int = 0
         self._stack_diffs: Dict[int, int] = {}
 
     @property
@@ -75,7 +76,9 @@ class Code:
 
     def _add_variable(self, variable_type: JOperandType) -> int:
         self._locals.append(variable_type)
-        return len(self._locals) - 1
+        index = self._locals_size
+        self._locals_size += variable_type.size()
+        return index
 
     def pos(self) -> int:
         """
