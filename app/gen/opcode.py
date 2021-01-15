@@ -1,8 +1,8 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 from typing import Optional
 
 
-class Opcode(IntEnum):
+class Opcode(int, Enum):
     """
     Java bytecode instructions opcodes
     """
@@ -211,7 +211,7 @@ class Opcode(IntEnum):
     JSR_W = (0xC9, 5, None, None)
 
     def __new__(cls, value: int, length: int, stack_diff: int, fmt: str):
-        obj = int.__new__(cls)
+        obj = int.__new__(cls, value)
         obj._value_ = value
         obj.length = length
         obj.stack_diff = stack_diff

@@ -5,12 +5,12 @@ from typing import BinaryIO
 from app.gen.code import Code
 from app.gen.constant import JConstUtf8, JConstInt, JConstLong, JConstFloat, JConstDouble, JConstString, JConstClass, \
     JConstFieldRef, JConstMethodRef, JConstNameAndType, JConst
-from app.gen.structs import Class, Field, Method
+from app.gen.opcode import Opcode
+from app.gen.cls import Class, Field, Method
 
 MAGIC = 0xCAFEBABE
 MINOR_VERSION = 0
 MAJOR_VERSION = 55
-NO_SUPER_CLASS_INDEX = 0
 CODE_ATTRIBUTE_NAME = 'Code'
 CODE_ATTRIBUTE_DEFAULT_SIZE = 12
 
@@ -44,31 +44,35 @@ F4 = 'f'
 F8 = 'd'
 
 
-def _write_magic(output: BinaryIO):
+_code_attribute_name_index: int
+
+
+def _write_magic(cls: Class, output: BinaryIO):
     output.write(struct.pack(BE + U4, MAGIC))
 
 
-def _write_version(output: BinaryIO):
+def _write_version(cls: Class, output: BinaryIO):
     output.write(struct.pack(BE + U2 + U2, MINOR_VERSION, MAJOR_VERSION))
 
 
 def _write_utf8(output: BinaryIO, value: str):
+    data = bytearray()
     for c in (ord(char) for char in value):
         if c == 0x00:
             # NULL byte encoding.
-            output.write(bytes([0xC0, 0x80]))
+            data.extend(bytes([0xC0, 0x80]))
         elif c < 0x7F:
             # ASCII
-            output.write(bytes(c))
+            data.extend(bytes([c]))
         elif c < 0x7FF:
             # two-byte codepoint
-            output.write(bytes([
+            data.extend(bytes([
                 (0xC0 | (0x1F & (c >> 6))),
                 (0x80 | (0x3F & c))
             ]))
         elif c < 0xFFFF:
             # three-byte codepoint.
-            output.write(bytes([
+            data.extend(bytes([
                 (0xE0 | (0x0F & (c >> 12))),
                 (0x80 | (0x3F & (c >> 6))),
                 (0x80 | (0x3F & c))
@@ -76,7 +80,7 @@ def _write_utf8(output: BinaryIO, value: str):
         else:
             # two-times-three byte codepoint.
             c -= 0x10000
-            output.write(bytes([
+            data.extend(bytes([
                 0xED,
                 0xA0 | ((c >> 16) & 0x0F),
                 0x80 | ((c >> 10) & 0x3f),
@@ -84,6 +88,9 @@ def _write_utf8(output: BinaryIO, value: str):
                 0xb0 | ((c >> 6) & 0x0f),
                 0x80 | (c & 0x3f)
             ]))
+
+    output.write(struct.pack(BE + U2, len(data)))
+    output.write(data)
 
 
 def _write_constant(constant: JConst, output: BinaryIO):
@@ -110,15 +117,22 @@ def _write_constant(constant: JConst, output: BinaryIO):
         output.write(struct.pack(BE + U2 + U2, constant.class_index, constant.name_and_type_index))
     elif isinstance(constant, JConstNameAndType):
         output.write(struct.pack(BE + U2 + U2, constant.name_index, constant.descriptor_index))
+    else:
+        NotImplementedError()
 
 
 def _write_constant_pool(cls: Class, output: BinaryIO):
+    global _code_attribute_name_index
+
+    # add code attribute name
+    _code_attribute_name_index = cls.constant_pool.utf8(CODE_ATTRIBUTE_NAME)
+
     constants = cls.constant_pool.constants
 
     # cp count
     output.write(struct.pack(BE + U2, len(constants) + 1))
 
-    for c in constants:
+    for (c, i) in constants.items():
         _write_constant(c, output)
 
 
@@ -131,11 +145,11 @@ def _write_this_class(cls: Class, output: BinaryIO):
     output.write(struct.pack(BE + U2, cls.this_class))
 
 
-def _write_super_class(output: BinaryIO):
-    output.write(struct.pack(BE + U2, NO_SUPER_CLASS_INDEX))
+def _write_super_class(cls: Class, output: BinaryIO):
+    output.write(struct.pack(BE + U2, cls.super_class))
 
 
-def _write_interfaces(output):
+def _write_interfaces(cls: Class, output):
     # interfaces count
     output.write(struct.pack(BE + U2, 0))
 
@@ -157,14 +171,15 @@ def _write_fields(cls: Class, output: BinaryIO):
     # fields count
     output.write(struct.pack(BE + U2, len(fields)))
 
-    for f in fields:
-        _write_field(f, output)
+    for ((name, descriptor), field) in fields:
+        _write_field(field, output)
 
 
 def _write_instruction(i: int, instruction, inst_positions, output: BinaryIO):
     opcode = instruction[0]
 
     if opcode.is_jump():
+        print(opcode)
         target_index = instruction[1]
         pos = inst_positions[i]
         target_pos = inst_positions[target_index]
@@ -197,7 +212,7 @@ def _write_code(code: Code, output: BinaryIO):
 
     size = CODE_ATTRIBUTE_DEFAULT_SIZE + code_size
 
-    output.write(struct.pack(BE + U2, code.constant_pool.utf8(CODE_ATTRIBUTE_NAME)))
+    output.write(struct.pack(BE + U2, _code_attribute_name_index))
     output.write(struct.pack(BE + U4, size))
     output.write(struct.pack(BE + U2, max_stack))
     output.write(struct.pack(BE + U2, max_locals))
@@ -231,24 +246,24 @@ def _write_methods(cls: Class, output: BinaryIO):
     # methods count
     output.write(struct.pack(BE + U2, len(methods)))
 
-    for m in methods:
-        _write_method(m, output)
+    for ((name, descriptor), method) in methods:
+        _write_method(method, output)
 
 
-def _write_attributes(output: BinaryIO):
+def _write_attributes(cls: Class, output: BinaryIO):
     # attributes count
     output.write(struct.pack(BE + U2, 0))
 
 
 def create_classfile(cls: Class, output: BinaryIO):
     # collect constants and create constant pool
-    _write_magic(output)
-    _write_version(output)
+    _write_magic(cls, output)
+    _write_version(cls, output)
     _write_constant_pool(cls, output)
     _write_access_flags(cls, output)
     _write_this_class(cls, output)
-    _write_super_class(output)
-    _write_interfaces(output)
+    _write_super_class(cls, output)
+    _write_interfaces(cls, output)
     _write_fields(cls, output)
     _write_methods(cls, output)
-    _write_attributes(output)
+    _write_attributes(cls, output)

@@ -6,6 +6,7 @@ import ply.yacc
 import app.lex
 import app.syntax
 import app.sem.analyze
+from app.gen.classfile import create_classfile
 from app.gen.generator import generate
 from app.syntax import Node
 
@@ -45,11 +46,12 @@ def main():
         print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
     parser = ply.yacc.yacc(module=app.syntax)
-    result = parser.parse(data, lexer=lexer, tracking=True)
+    ast = parser.parse(data, lexer=lexer, tracking=True)
 
-    print_tree(result)
-    app.sem.analyze(result)
-    # cls = generate("Main", result)
+    print_tree(ast)
+    if app.sem.analyze(ast):
+        cls = generate("Main", ast)
+        create_classfile(cls, open('Main.class', 'wb'))
 
 
 if __name__ == '__main__':

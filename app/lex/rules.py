@@ -1,4 +1,8 @@
+import re
+
 from ply.lex import TOKEN
+
+from app.util import replace_escapes
 
 keywords = {
     'var': 'VAR',
@@ -82,6 +86,9 @@ def t_LITERAL_STR(t):
     "([^\\"]|\\.)*\"
     """
     t.value = str(t.value)
+
+    # replace all \n for real newlines
+    t.value = replace_escapes(t.value)
     return t
 
 

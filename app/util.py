@@ -22,4 +22,26 @@ def is_long(value: int) -> bool:
     return -9223372036854775808 <= value <= 9223372036854775807
 
 
+def replace_escapes(s: str):
+    esc = False
+    result = ''
+
+    for c in s:
+        if esc:
+            esc = False
+            if c == 'n':
+                result += '\n'
+            if c == 't':
+                result += '\t'
+            if c == 'a':
+                result += '\a'
+            else:
+                result += c
+        else:
+            if c == '\\':
+                esc = True
+            else:
+                result += c
+
+    return result
 

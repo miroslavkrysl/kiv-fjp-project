@@ -143,7 +143,7 @@ class ClassDesc(BaseDescriptor):
         return self._class_name
 
     def utf8(self) -> str:
-        return f'[L{self._class_name};'
+        return f'L{self._class_name};'
 
     def __str__(self):
         return self._class_name

@@ -13,7 +13,7 @@ JC_STRING = 'java/lang/String'
 # --- Basic ---
 
 J_CLINIT_NAME = '<clinit>'
-J_INIT_NAME = '<clinit>'
+J_INIT_NAME = '<init>'
 J_CLINIT_DESCRIPTOR = MethodDescriptor([])
 J_MAIN_NAME = 'main'
 J_MAIN_DESCRIPTOR = MethodDescriptor([ArrayDesc(1, ClassDesc(JC_STRING))])

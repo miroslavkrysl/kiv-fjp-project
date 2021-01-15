@@ -7,7 +7,7 @@ from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_
     JM_STRING_LENGTH, JSM_INT_TO_STRING, JSM_INT_PARSE, JSM_BOOLEAN_PARSE, JSM_DOUBLE_PARSE, JSM_DOUBLE_TO_STRING, \
     JSM_BOOLEAN_TO_STRING, JSF_STDIN, JM_PRINT, JSF_STDOUT, JC_BUFF_READER, JM_READLINE, JM_STRING_CONCAT, \
     JM_STRING_EQUALS, JC_INPUT_STREAM_READER, JIM_INPUT_STREAM_READER, JIM_BUFF_READER, JM_STRING_SUBSTRING
-from app.gen.structs import Class, Method
+from app.gen.cls import Class, Method
 from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
     FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING, FN_EOF
 from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray, TypeVoid
@@ -47,7 +47,7 @@ def _create_field_descriptor(t: Type) -> FieldDescriptor:
 
         return ArrayDesc(t.dim, inner)
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(t)
 
 
 def _create_return_descriptor(t: Type) -> Optional[FieldDescriptor]:
@@ -59,7 +59,7 @@ def _create_return_descriptor(t: Type) -> Optional[FieldDescriptor]:
 
 def _create_method_descriptor(params: List[Type], ret: Optional[Type]) -> MethodDescriptor:
     params_desc = [_create_field_descriptor(p) for p in params]
-    ret_desc = None if ret is None else _create_return_descriptor(ret)
+    ret_desc = _create_return_descriptor(ret)
     return MethodDescriptor(params_desc, ret_desc)
 
 
@@ -179,7 +179,7 @@ def _function_def(statement):
     ret = statement['return']
     statements = statement['statements']
 
-    method_desc = _create_method_descriptor([p['type'] for p in params], ret)
+    method_desc = _create_method_descriptor([p['type'] for p in params], ret['type'])
 
     method = _class.method(name, method_desc)
 
@@ -313,6 +313,8 @@ def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: 
         _statement_function_call(code, statement)
     elif node_type == Node.RETURN:
         _statement_return(code, statement)
+    elif node_type == Node.RETURN_VOID:
+        code.return_void()
     elif node_type == Node.IF:
         _statement_if(code, statement)
     elif node_type == Node.IF_ELSE:
@@ -326,7 +328,7 @@ def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: 
     elif node_type == Node.CONTINUE:
         code.goto(loop_start)
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(node_type)
 
 
 def _exp_uminus(code: Code, exp):
@@ -685,7 +687,7 @@ def _exp_var_load(code: Code, exp):
     t = exp['type']
 
     index = _locals.get(name)
-    if index:
+    if index is not None:
         if isinstance(t, TypeInt):
             code.load_int(index)
         elif isinstance(t, TypeReal):
@@ -709,7 +711,7 @@ def _exp_array_load(code: Code, exp):
     t = exp['type']
 
     index = _locals.get(name)
-    if index:
+    if index is not None:
         code.load_reference(index)
     else:
         field = _fields.get(name)

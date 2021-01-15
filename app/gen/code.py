@@ -71,7 +71,7 @@ class Code:
         self._stack_diffs[pos] = diff
 
     def _add_instruction(self, opcode: Opcode, *args):
-        self._instructions.append((opcode, *args))
+        self._instructions.append([opcode, *args])
 
     def _add_variable(self, variable_type: JOperandType) -> int:
         self._locals.append(variable_type)

@@ -205,8 +205,8 @@ class ConstantPool:
         return self._add(JConstUtf8(value))
 
     def class_ref(self, class_name: str) -> int:
-        class_name = ClassDesc(class_name)
-        name_index = self.utf8(class_name.utf8())
+        class_name = class_name
+        name_index = self.utf8(class_name)
         class_index = self._add(JConstClass(name_index))
         return class_index
 
@@ -226,7 +226,7 @@ class ConstantPool:
         name_index = self.field_name(name)
         descriptor_index = self.field_descriptor(descriptor)
         name_and_type_index = self._add(JConstNameAndType(name_index, descriptor_index))
-        field_index = self._add(JConstMethodRef(class_index, name_and_type_index))
+        field_index = self._add(JConstFieldRef(class_index, name_and_type_index))
         return field_index
 
     def method_name(self, name: str) -> int:

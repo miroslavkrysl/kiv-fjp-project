@@ -34,7 +34,7 @@ _functions = {
 
     (FN_SUBSTRING, (TypeStr(), TypeInt(), TypeInt())): TypeStr(),
 
-    (FN_WRITE, (TypeStr(),)): None,
+    (FN_WRITE, (TypeStr(),)): TypeVoid(),
     (FN_READ_LINE, ()): TypeStr(),
     (FN_EOF, ()): TypeBool(),
 }
@@ -178,7 +178,7 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
                 break
 
             ret_type = _node_to_type(ret)
-            ret['return'] = ret_type
+            ret['type'] = ret_type
             _add_func(name, params_types, ret_type)
             if not _analyze_layer(stmts, in_loop, ret_type, params):
                 break
@@ -310,7 +310,6 @@ def _validate_expression(expression) -> Optional[Type]:
     :param expression: The expression.
     :return: Result type or None on failure
     """
-    print(expression)
     node_type = expression['node']
 
     if node_type == Node.VALUE_INT \
@@ -559,7 +558,6 @@ def _array_type_inference(expression, top_type: Type):
     if expression['node'] != Node.VALUE_ARRAY or not isinstance(top_type, TypeArray):
         return
 
-    print(expression)
     dim = expression['type'].dim
     expression['type'] = TypeArray(dim, top_type.inner)
 
