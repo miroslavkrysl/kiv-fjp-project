@@ -1,0 +1,26 @@
+fn reader():Str {
+    var inp:Str = "";
+
+    while true {
+        inp = read_line();
+        if len(inp) > 20 {
+            write("Input is too long\n");
+        } else {
+            if (len(inp) < 3) {
+                write("Input is too short\n");
+            } else {
+                break;
+            }
+        }
+    }
+
+    return inp;
+}
+
+fn main() {
+	var data:Str = reader();
+
+	write("You wrote:");
+	write(data);
+	write("\n");
+}

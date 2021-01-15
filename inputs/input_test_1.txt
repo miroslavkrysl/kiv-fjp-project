@@ -27,3 +27,7 @@ fn call(a:Int, b:Int, c:Str): Int {
 
 fn hell() {
 }
+
+fn main() {
+ hell();
+}
