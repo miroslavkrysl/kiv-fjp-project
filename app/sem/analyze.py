@@ -212,6 +212,10 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
             if _validate_var_store(statement) is None:
                 break
 
+        elif node_type == Node.ARRAY_STORE:
+            if _validate_array_store(statement) is None:
+                break
+
         # Function call
         elif node_type == Node.FUNCTION_CALL:
             if _validate_function_call(statement) is None:
@@ -358,8 +362,9 @@ def _validate_expression(expression) -> Optional[Type]:
             _errors.append(f'Variable \'{name}\' is not defined.')
             return None
 
-        expression['type'] = var[0]
-        return _validate_array_access(var[0], indexes)
+        t = _validate_array_access(var[0], indexes)
+        expression['type'] = t
+        return t
 
     elif node_type == Node.ARRAY_ASSIGNMENT:
         return _validate_array_store(expression)

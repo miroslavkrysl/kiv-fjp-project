@@ -14,8 +14,9 @@ from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray
 from app.syntax import Node
 
 
-BUFF_READER_FIELD = '$input'
-EOF_FIELD = '$eof'
+PREFIX = '$'
+BUFF_READER_FIELD = PREFIX + 'input'
+EOF_FIELD = PREFIX + 'eof'
 
 _locals: Dict[str, int]
 _fields: Dict[str, Tuple[str, str, FieldDescriptor]]
@@ -175,7 +176,7 @@ def _statement_var_def(code: Code, statement):
 
 
 def _function_def(statement):
-    name = statement['name']
+    name = PREFIX + statement['name']
     params = statement['parameters']
     ret = statement['return']
     statements = statement['statements']
@@ -186,6 +187,7 @@ def _function_def(statement):
 
     # initialize method parameters
     for p in params:
+        name = p['name']
         t = p['type']
         if isinstance(t, TypeInt):
             index = method.code.variable_int()
@@ -207,7 +209,7 @@ def _function_def(statement):
 
 
 def _constant_def(statement):
-    name = statement['name']
+    name = PREFIX + statement['name']
     const_type = statement['type']
     expression = statement['expression']
     descriptor = _create_field_descriptor(const_type)
@@ -261,15 +263,15 @@ def _statement_array_store(code: Code, exp):
     # item store
     _expression(code, index_exps[-1])
     _expression(code, expression)
-    if isinstance(t.inner, TypeInt):
+    if isinstance(t, TypeInt):
         code.array_store_int()
-    elif isinstance(t.inner, TypeReal):
+    elif isinstance(t, TypeReal):
         code.array_store_double()
-    elif isinstance(t.inner, TypeBool):
+    elif isinstance(t, TypeBool):
         code.array_store_boolean()
-    elif isinstance(t.inner, TypeStr):
+    elif isinstance(t, TypeStr):
         code.array_store_reference()
-    elif isinstance(t.inner, TypeArray):
+    elif isinstance(t, TypeArray):
         code.array_store_reference()
     else:
         raise NotImplementedError()
@@ -702,6 +704,7 @@ def _exp_var_load(code: Code, exp):
         else:
             raise NotImplementedError()
     else:
+        name = PREFIX + name
         field = _fields.get(name)
         code.load_field(field[0], field[1], field[2])
 
@@ -715,6 +718,7 @@ def _exp_array_load(code: Code, exp):
     if index is not None:
         code.load_reference(index)
     else:
+        name = PREFIX + name
         field = _fields.get(name)
         code.load_field(field[0], field[1], field[2])
 
@@ -748,6 +752,7 @@ def _exp_value_array(code: Code, exp):
     else:
         desc = _create_field_descriptor(t.inner)
 
+    code.const_int(len(items))
     code.new_array(desc)
 
     for (i, item) in enumerate(items):
@@ -948,6 +953,7 @@ def _exp_function_call(code: Code, exp):
         return
 
     # custom function
+    name = PREFIX + name
     desc = _create_method_descriptor(params, ret)
     code.invoke_static(_class_name, name, desc)
 
@@ -1041,7 +1047,7 @@ def _close_clinit():
 
 def _generate_main():
     method = _class.method(J_MAIN_NAME, J_MAIN_DESCRIPTOR)
-    method.code.invoke_static(_class_name, FN_MAIN, _create_method_descriptor(FN_MAIN_PARAMS, FN_MAIN_RETURN))
+    method.code.invoke_static(_class_name, PREFIX + FN_MAIN, _create_method_descriptor(FN_MAIN_PARAMS, FN_MAIN_RETURN))
     method.code.return_void()
 
 

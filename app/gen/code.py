@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 from typing import List, Optional, Any, Dict
 
 from app.gen.constant import ConstantPool
@@ -9,7 +9,7 @@ from app.gen.opcode import Opcode
 from app.util import is_byte, is_short
 
 
-class ArrayType(Enum):
+class ArrayType(IntEnum):
     BOOLEAN = 4
     CHAR = 5
     FLOAT = 6

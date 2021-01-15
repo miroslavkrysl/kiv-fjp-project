@@ -33,7 +33,7 @@ def main():
     # Build the lexical_analyzer
     lexer = ply.lex.lex(module=app.lex)
 
-    data = open('../inputs/input_test.txt', 'r').read()
+    data = open('../inputs/input_test_2.txt', 'r').read()
     lexer.input(data)
 
     # Tokenize
@@ -47,8 +47,8 @@ def main():
     parser = ply.yacc.yacc(module=app.syntax)
     ast = parser.parse(data, lexer=lexer, tracking=True)
 
-    print_tree(ast)
     if app.sem.analyze(ast):
+        print_tree(ast)
         cls = generate("Main", ast)
         create_classfile(cls, open('Main.class', 'wb'))
 
