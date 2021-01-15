@@ -115,7 +115,7 @@ def analyze(ast) -> bool:
     :param ast: The AST.
     :return: List of errors None otherwise
     """
-    print("ANALYZING THE INPUT...")
+    # print("ANALYZING THE INPUT...")
     _analyze_layer(ast['statements'], False)
     _check_main()
 
@@ -154,8 +154,8 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
 
     # Go through the all statements in the current depth
     for statement in statements:
-        # TODO: This print is just for debugging
-        print("{0}: {1}".format(len(_vars), statement))
+        # This print is just for debugging
+        # print("{0}: {1}".format(len(_vars), statement))
 
         node_type = statement['node']
 

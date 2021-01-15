@@ -1,5 +1,6 @@
 # PLY's documentation: http://www.dabeaz.com/ply/ply.html
 import os
+import re
 from pprint import pprint, pp
 
 import sys
@@ -11,6 +12,8 @@ import app.sem.analyze
 from app.gen.classfile import create_classfile
 from app.gen.generator import generate
 
+
+CLASS_NAME_REGEX = r'^([^\.;\[/]+\.)*[^\.;\[/]+$'
 
 def print_tree(x, level=0):
     if isinstance(x, dict):
@@ -37,37 +40,41 @@ def main():
 
     if len(sys.argv) < 3:
         print("Parameters does not match the format!")
-        print("<input_code_file> <output_class_file>")
+        print("<input_code_file> <output_class_name>")
         return 1
 
     input_file = sys.argv[1]
-    output_file = sys.argv[2]
+    output_class_name = sys.argv[2]
 
     if not os.path.isfile(input_file):
         print("Input file not accessible!")
+        return 1
+
+    if not re.match(CLASS_NAME_REGEX, output_class_name):
+        print("Output class name is invalid!")
         return 1
 
     data = open(input_file, 'r').read()
     lexer.input(data)
 
     # Tokenize
-    while True:
-        tok = lexer.token()
-        if not tok:
-            break  # No more input
-        # print(tok)
-        # print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
+    # while True:
+    #     tok = lexer.token()
+    #     if not tok:
+    #         break  # No more input
+    #     print(tok)
+    #     print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
-    parser = ply.yacc.yacc(module=app.syntax)
-    ast = parser.parse(data, lexer=lexer, tracking=True)
+    parser = ply.yacc.yacc(module=app.syntax, debug=False)
+    ast = parser.parse(data, lexer=lexer, tracking=True, debug=False)
 
     if app.sem.analyze(ast):
         # print_tree(ast)
-        cls = generate("Main", ast)
-        f = open(output_file, 'wb')
-        create_classfile(cls, f)
-        f.close()
+        cls = generate(output_class_name, ast)
+        output_file = open(output_class_name + '.class', 'wb')
+        create_classfile(cls, output_file)
+        output_file.close()
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
