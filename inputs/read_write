@@ -1,8 +1,9 @@
 fn reader():Str {
     var inp:Str = "";
 
-    while true {
-        inp = read_line();
+    write("Write something between 3 and 20 characters.\n");
+
+    while (inp = read_line()) != "" | !eof() {
         if len(inp) > 20 {
             write("Input is too long\n");
         } else {
@@ -20,7 +21,7 @@ fn reader():Str {
 fn main() {
 	var data:Str = reader();
 
-	write("You wrote:");
+	write("You wrote: ");
 	write(data + "\n");
 	return;
 }

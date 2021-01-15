@@ -116,8 +116,9 @@ def analyze(ast) -> bool:
     :return: List of errors None otherwise
     """
     # print("ANALYZING THE INPUT...")
-    _analyze_layer(ast['statements'], False)
-    _check_main()
+
+    if _analyze_layer(ast['statements'], False):
+        _check_main()
 
     for e in _errors:
         print(e)

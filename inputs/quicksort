@@ -26,7 +26,7 @@ fn quicksort(array: [Int], left: Int, right: Int) {
 }
 
 fn main() {
-	var pole:[Int] = [4,7,2,1,8];
+	var pole:[Int] = [4, 7, 2, 1, 8, 4, 45, 12];
 
     write("original:\n");
 	var k :Int = 0;
