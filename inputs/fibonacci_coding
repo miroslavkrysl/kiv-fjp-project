@@ -1,0 +1,35 @@
+fn largest_fib_less_or_equal(fib: [Int], n: Int): [Int] {
+    fib[0] = 0;
+    fib[1] = 2;
+
+    var i: Int = 2;
+    while fib[i - 1] <= n {
+        fib[i] = fib[i - 1] + fib[i - 2];
+        i = i + 1;
+    }
+
+    return fib;
+}
+
+fn fibonacci_encoding(n: Int) {
+    var fib: [Int] = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
+    fib = largest_fib_less_or_equal(fib, n);
+    var y: Int = 0;
+    while y < len(fib) {
+        if fib[y] == -1 {
+            break;
+        }
+        write(str(y) + ": " + str(fib[y]) + "\n");
+        y = y + 1;
+    }
+    return;
+}
+
+fn main() {
+    var number: Int = 143;
+    write("Fibonacci code word for " + str(number) + " is:\n");
+
+    fibonacci_encoding(number);
+    
+    return;
+}
