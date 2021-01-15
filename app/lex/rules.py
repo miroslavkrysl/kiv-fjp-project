@@ -30,7 +30,10 @@ keywords = {
     'Str': 'TYPE_STR'
 }
 
-boolean = {'true', 'false'}
+boolean = {
+    'true': True,
+    'false': False
+}
 
 t_COMMA = r'\,'
 t_COLON = r':'
@@ -103,9 +106,11 @@ def t_IDENTIFIER(t):
     if k:
         t.type = k
 
-    if t.value in boolean:
+    v = boolean.get(t.value)
+    if v is not None:
         t.type = 'LITERAL_BOOL'
-        t.value = bool(t.value)
+        t.value = v
+
     return t
 
 
