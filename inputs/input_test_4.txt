@@ -1,0 +1,14 @@
+fn test(cst:[Str]) {
+    var i: Real = 2.5;
+    while i < real(5) {
+        if len(cst) > 0 {
+            i = i + real(real(cst[0]));
+            write(str(i) + "\n");
+        }
+    }
+}
+
+fn main() {
+    const xa:[Str] = ["0.4"];
+	test(xa);
+}

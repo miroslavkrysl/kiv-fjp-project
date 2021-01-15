@@ -34,7 +34,7 @@ def main():
     # Build the lexical_analyzer
     lexer = ply.lex.lex(module=app.lex)
 
-    data = open('../input_test.txt', 'r').read()
+    data = open('../inputs/input_test.txt', 'r').read()
     lexer.input(data)
 
     # Tokenize

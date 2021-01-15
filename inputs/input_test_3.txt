@@ -1,0 +1,20 @@
+fn doThis() {
+}
+
+fn main()
+{
+	var my_crazy_array: [[[Str]]] = [[["www", "xaxa"]], [[]]];
+	const in:Int = 10;
+
+	if (10 +1) == int(in) {
+		doThis();
+	}
+
+	i = 1;
+	while (true) {
+		i = i + 1;
+		if i > 10 {
+			break;
+		}
+	}
+}
