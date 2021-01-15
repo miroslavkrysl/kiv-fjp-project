@@ -5,6 +5,7 @@ from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, 
     FN_SUBSTRING, FN_WRITE, FN_READ_LINE, FN_EOF
 from app.syntax.ast import Node
 from app.lang_types import Type, TypeInt, TypeReal, TypeStr, TypeBool, TypeArray, TypeAny, BaseType, TypeVoid
+from app.util import is_int
 
 _vars = []  # Key = depth, Value => Key = identifier, Value = (type, is constant)
 
@@ -538,6 +539,9 @@ def _validate_value(expression):
     :return: Type of the value or None on failure.
     """
     if expression['node'] == Node.VALUE_INT:
+        if not is_int(expression['value']):
+            _errors.append(f'Integer {expression["value"]} is out of bounds (4 bytes).')
+            return None
         expression['type'] = TypeInt()
         return TypeInt()
     elif expression['node'] == Node.VALUE_REAL:
