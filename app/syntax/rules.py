@@ -521,10 +521,8 @@ def p_items_list(p):
 # Error rule for syntax errors
 def p_error(p):
     if p is not None:
-        print(f"Syntax error [{p.lexer.lexpos}]")
+        print(f"syntax error: line= {p.lexer.lineno}, value= '{p.value}'")
     else:
         print("Unexpected end of input")
 
-    raise SyntaxError()
-
-    # print("Syntax error in input!")
+    # raise SyntaxError()

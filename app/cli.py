@@ -15,6 +15,7 @@ from app.gen.generator import generate
 
 CLASS_NAME_REGEX = r'^([^\.;\[/]+\.)*[^\.;\[/]+$'
 
+
 def print_tree(x, level=0):
     if isinstance(x, dict):
         print(('    ' * level) + str(x['node']))

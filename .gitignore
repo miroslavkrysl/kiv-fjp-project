@@ -3,3 +3,4 @@
 **/__pycache__/**
 app/**/parser.out
 app/**/parsetab.py
+*.class
