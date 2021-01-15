@@ -182,6 +182,9 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
             _add_func(name, params_types, ret_type)
             if not _analyze_layer(stmts, in_loop, ret_type, params):
                 break
+            if not isinstance(ret_type, TypeVoid) and not _validate_function_returns(stmts):
+                print(f'Function \'{name}({", ".join(str(t) for t in params_types)})\' does not return a value in all possible ways.')
+                break
 
         # Variable and constant definition
         elif node_type == Node.CONSTANT_DEFINITION or node_type == Node.VARIABLE_DEFINITION:
@@ -374,6 +377,37 @@ def _validate_expression(expression) -> Optional[Type]:
 
     else:
         raise NotImplementedError()
+
+
+def _validate_function_returns(statements) -> bool:
+    fork_statements = []
+    for statement in statements:
+        node_type = statement['node']
+
+        if node_type == Node.RETURN:
+            return True
+
+        elif node_type == Node.IF_ELSE:
+            fork_statements.append(statement)
+
+    for statement in fork_statements:
+        node_type = statement['node']
+
+        if node_type == Node.IF_ELSE:
+            if_statements = statement['if_statements']
+            else_statements = statement['else_statements']
+            ret1 = _validate_function_returns(if_statements)
+            ret2 = _validate_function_returns(else_statements)
+            if ret1 and ret2:
+                return True
+            else:
+                continue
+
+        else:
+            print("internal error")
+            break
+
+    return False
 
 
 def _validate_function_call(expression) -> Optional[Type]:
