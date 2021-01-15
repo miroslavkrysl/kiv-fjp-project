@@ -694,7 +694,7 @@ def _exp_var_load(code: Code, exp):
     else:
         name = PREFIX + name
         field = _fields.get(name)
-        code.load_field(field[0], field[1], field[2])
+        code.load_static_field(field[0], field[1], field[2])
 
 
 def _exp_array_load(code: Code, exp):
@@ -708,7 +708,7 @@ def _exp_array_load(code: Code, exp):
     else:
         name = PREFIX + name
         field = _fields.get(name)
-        code.load_field(field[0], field[1], field[2])
+        code.load_static_field(field[0], field[1], field[2])
 
     # subarrays load if multidim
     for e in index_exps[:-1]:
@@ -874,7 +874,7 @@ def _exp_function_call(code: Code, exp):
     if name == FN_BOOL and len(params) == 1:
         if isinstance(params[0], TypeInt):
             code.const_int(1)
-            code.add_int()
+            code.and_int()
             return
         elif isinstance(params[0], TypeReal):
             code.const_double(0.0)
