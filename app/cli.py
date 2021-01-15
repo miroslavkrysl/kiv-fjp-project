@@ -8,7 +8,6 @@ import app.syntax
 import app.sem.analyze
 from app.gen.classfile import create_classfile
 from app.gen.generator import generate
-from app.syntax import Node
 
 
 def print_tree(x, level=0):

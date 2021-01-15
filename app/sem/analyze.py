@@ -388,7 +388,7 @@ def _validate_function_call(expression) -> Optional[Type]:
         return None
 
     expression['parameters'] = args_types
-    expression['return'] = fn_ret
+    expression['type'] = fn_ret
     return fn_ret
 
 
@@ -498,12 +498,16 @@ def _validate_value(expression):
     :return: Type of the value or None on failure.
     """
     if expression['node'] == Node.VALUE_INT:
+        expression['type'] = TypeInt()
         return TypeInt()
     elif expression['node'] == Node.VALUE_REAL:
+        expression['type'] = TypeReal()
         return TypeReal()
     elif expression['node'] == Node.VALUE_BOOL:
+        expression['type'] = TypeBool()
         return TypeBool()
     elif expression['node'] == Node.VALUE_STR:
+        expression['type'] = TypeStr()
         return TypeStr()
     elif expression['node'] == Node.VALUE_ARRAY:
         return _validate_array_value(expression)

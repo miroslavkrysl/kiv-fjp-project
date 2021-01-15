@@ -76,13 +76,14 @@ def _statement_while(code: Code, statement):
     for s in statements:
         _statement(code, s, start, breaks)
 
+    code.goto(start)
     end_pos = code.pos()
     code.update_jump(cond_pos, end_pos)
     for b in breaks:
         code.update_jump(b, end_pos)
 
 
-def _statement_if(code: Code, statement):
+def _statement_if(code: Code, statement, loop_start: Optional[int] = None, breaks: Optional[List[int]] = None):
     condition = statement['condition']
     statements = statement['statements']
 
@@ -91,13 +92,13 @@ def _statement_if(code: Code, statement):
     code.if_eq()
 
     for s in statements:
-        _statement(code, s)
+        _statement(code, s, loop_start, breaks)
 
     end_pos = code.pos()
     code.update_jump(cond_pos, end_pos)
 
 
-def _statement_if_else(code: Code, statement):
+def _statement_if_else(code: Code, statement, loop_start: Optional[int] = None, breaks: Optional[List[int]] = None):
     condition = statement['condition']
     if_statements = statement['if_statements']
     else_statements = statement['else_statements']
@@ -107,14 +108,14 @@ def _statement_if_else(code: Code, statement):
     code.if_eq()
 
     for s in if_statements:
-        _statement(code, s)
+        _statement(code, s, loop_start, breaks)
 
     goto_pos = code.pos()
     code.goto()
 
     else_pos = code.pos()
     for s in else_statements:
-        _statement(code, s)
+        _statement(code, s, loop_start, breaks)
 
     end_pos = code.pos()
 
@@ -275,7 +276,7 @@ def _statement_array_store(code: Code, exp):
 
 
 def _statement_function_call(code: Code, exp):
-    ret = exp['return']
+    ret = exp['type']
     _exp_function_call(code, exp)
 
     if isinstance(ret, TypeInt) \
@@ -316,9 +317,9 @@ def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: 
     elif node_type == Node.RETURN_VOID:
         code.return_void()
     elif node_type == Node.IF:
-        _statement_if(code, statement)
+        _statement_if(code, statement, loop_start, breaks)
     elif node_type == Node.IF_ELSE:
-        _statement_if_else(code, statement)
+        _statement_if_else(code, statement, loop_start, breaks)
     elif node_type == Node.WHILE:
         _statement_while(code, statement)
     elif node_type == Node.BREAK:
@@ -333,15 +334,15 @@ def _statement(code: Code, statement, loop_start: Optional[int] = None, breaks: 
 
 def _exp_uminus(code: Code, exp):
     expression = exp['expression']
-    t = exp['type']
+    exp_type = exp['expression']['type']
     _expression(code, expression)
 
-    if isinstance(t, TypeInt):
+    if isinstance(exp_type, TypeInt):
         code.neg_int()
-    elif isinstance(t, TypeReal):
+    elif isinstance(exp_type, TypeReal):
         code.neg_double()
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_uplus(code: Code, exp):
@@ -352,89 +353,89 @@ def _exp_uplus(code: Code, exp):
 def _exp_mul(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt):
+    if isinstance(left_type, TypeInt):
         code.mul_int()
-    elif isinstance(t, TypeReal):
+    elif isinstance(left_type, TypeReal):
         code.mul_double()
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_div(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt):
+    if isinstance(left_type, TypeInt):
         code.div_int()
-    elif isinstance(t, TypeReal):
+    elif isinstance(left_type, TypeReal):
         code.div_double()
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_plus(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt):
+    if isinstance(left_type, TypeInt):
         code.add_int()
-    elif isinstance(t, TypeReal):
+    elif isinstance(left_type, TypeReal):
         code.add_double()
-    elif isinstance(t, TypeStr):
+    elif isinstance(left_type, TypeStr):
         code.invoke_virtual(*JM_STRING_CONCAT)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_minus(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt):
+    if isinstance(left_type, TypeInt):
         code.sub_int()
-    elif isinstance(t, TypeReal):
+    elif isinstance(left_type, TypeReal):
         code.sub_double()
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_sub(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt):
+    if isinstance(left_type, TypeInt):
         code.add_int()
-    elif isinstance(t, TypeReal):
+    elif isinstance(left_type, TypeReal):
         code.add_double()
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_eq(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt) or isinstance(t, TypeBool) or isinstance(t, TypeReal):
-        if isinstance(t, TypeReal):
+    if isinstance(left_type, TypeInt) or isinstance(left_type, TypeBool) or isinstance(left_type, TypeReal):
+        if isinstance(left_type, TypeReal):
             code.cmp_double_l()
             cmp_pos = code.pos()
             code.if_eq()
@@ -450,21 +451,21 @@ def _exp_eq(code: Code, exp):
 
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
-    elif isinstance(t, TypeStr):
+    elif isinstance(left_type, TypeStr):
         code.invoke_virtual(*JM_STRING_EQUALS)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_ne(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt) or isinstance(t, TypeBool) or isinstance(t, TypeReal):
-        if isinstance(t, TypeReal):
+    if isinstance(left_type, TypeInt) or isinstance(left_type, TypeBool) or isinstance(left_type, TypeReal):
+        if isinstance(left_type, TypeReal):
             code.cmp_double_l()
             cmp_pos = code.pos()
             code.if_ne()
@@ -480,7 +481,7 @@ def _exp_ne(code: Code, exp):
 
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
-    elif isinstance(t, TypeStr):
+    elif isinstance(left_type, TypeStr):
         code.invoke_virtual(*JM_STRING_EQUALS)
         cmp_pos = code.pos()
         code.if_eq()
@@ -494,18 +495,18 @@ def _exp_ne(code: Code, exp):
         code.update_jump(cmp_pos, false_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_lt(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt) or isinstance(t, TypeReal):
-        if isinstance(t, TypeReal):
+    if isinstance(left_type, TypeInt) or isinstance(left_type, TypeReal):
+        if isinstance(left_type, TypeReal):
             code.cmp_double_l()
             cmp_pos = code.pos()
             code.if_lt()
@@ -522,18 +523,18 @@ def _exp_lt(code: Code, exp):
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_gt(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt) or isinstance(t, TypeReal):
-        if isinstance(t, TypeReal):
+    if isinstance(left_type, TypeInt) or isinstance(left_type, TypeReal):
+        if isinstance(left_type, TypeReal):
             code.cmp_double_g()
             cmp_pos = code.pos()
             code.if_gt()
@@ -550,18 +551,18 @@ def _exp_gt(code: Code, exp):
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_le(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt) or isinstance(t, TypeReal):
-        if isinstance(t, TypeReal):
+    if isinstance(left_type, TypeInt) or isinstance(left_type, TypeReal):
+        if isinstance(left_type, TypeReal):
             code.cmp_double_l()
             cmp_pos = code.pos()
             code.if_le()
@@ -578,18 +579,18 @@ def _exp_le(code: Code, exp):
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_ge(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeInt) or isinstance(t, TypeReal):
-        if isinstance(t, TypeReal):
+    if isinstance(left_type, TypeInt) or isinstance(left_type, TypeReal):
+        if isinstance(left_type, TypeReal):
             code.cmp_double_g()
             cmp_pos = code.pos()
             code.if_ge()
@@ -606,15 +607,15 @@ def _exp_ge(code: Code, exp):
         code.update_jump(cmp_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_not(code: Code, exp):
-    r = exp[2]
-    t = exp['type']
-    _expression(code, r)
+    expression = exp['expression']
+    exp_type = exp['expression']['type']
+    _expression(code, expression)
 
-    if isinstance(t, TypeBool):
+    if isinstance(exp_type, TypeBool):
         cmp_pos = code.pos()
         code.if_eq()
         code.const_int(0)
@@ -627,17 +628,17 @@ def _exp_not(code: Code, exp):
         code.update_jump(cmp_pos, false_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_and(code: Code, exp):
     left = exp['left']
     right = exp['right']
-    t = exp['type']
+    left_type = exp['left']['type']
     _expression(code, left)
     _expression(code, right)
 
-    if isinstance(t, TypeBool):
+    if isinstance(left_type, TypeBool):
         cmp1_pos = code.pos()
         code.if_eq()
         cmp2_pos = code.pos()
@@ -653,7 +654,7 @@ def _exp_and(code: Code, exp):
         code.update_jump(cmp2_pos, false_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_or(code: Code, exp):
@@ -679,7 +680,7 @@ def _exp_or(code: Code, exp):
         code.update_jump(cmp2_pos, true_pos)
         code.update_jump(goto_pos, end_pos)
     else:
-        NotImplementedError()
+        raise NotImplementedError()
 
 
 def _exp_var_load(code: Code, exp):
@@ -835,7 +836,7 @@ def _exp_function_call(code: Code, exp):
     name = exp['name']
     args_exps = exp['arguments']
     params = exp['parameters']
-    ret = exp['return']
+    ret = exp['type']
 
     for e in args_exps:
         _expression(code, e)
@@ -929,10 +930,10 @@ def _exp_function_call(code: Code, exp):
 
     if name == FN_READ_LINE and len(params) == 0:
         code.load_static_field(_class_name, BUFF_READER_FIELD, ClassDesc(JC_BUFF_READER))
-        code.swap()
         code.invoke_virtual(*JM_READLINE)
 
         # if result null, set the eof field to true and load empty string
+        code.dup()
         cmp_pos = code.pos()
         code.if_non_null()
         code.const_int(1)

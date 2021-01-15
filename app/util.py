@@ -31,9 +31,9 @@ def replace_escapes(s: str):
             esc = False
             if c == 'n':
                 result += '\n'
-            if c == 't':
+            elif c == 't':
                 result += '\t'
-            if c == 'a':
+            elif c == 'a':
                 result += '\a'
             else:
                 result += c

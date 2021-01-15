@@ -21,6 +21,6 @@ fn main() {
 	var data:Str = reader();
 
 	write("You wrote:");
-	write(data);
-	write("\n");
+	write(data + "\n");
+	return;
 }

@@ -179,7 +179,6 @@ def _write_instruction(i: int, instruction, inst_positions, output: BinaryIO):
     opcode = instruction[0]
 
     if opcode.is_jump():
-        print(opcode)
         target_index = instruction[1]
         pos = inst_positions[i]
         target_pos = inst_positions[target_index]
