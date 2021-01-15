@@ -184,8 +184,8 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
             _add_func(name, params_types, ret_type)
             if not _analyze_layer(stmts, in_loop, ret_type, params):
                 break
-            if not isinstance(ret_type, TypeVoid) and not _validate_function_returns(stmts):
-                print(f'Function \'{name}({", ".join(str(t) for t in params_types)})\' does not return a value in all possible ways.')
+            if not _validate_function_returns(stmts, Node.RETURN_VOID if isinstance(ret_type, TypeVoid) else Node.RETURN):
+                print(f'Function \'{name}({", ".join(str(t) for t in params_types)})\' may not have a return.')
                 break
 
         # Variable and constant definition
@@ -381,12 +381,12 @@ def _validate_expression(expression) -> Optional[Type]:
         raise NotImplementedError()
 
 
-def _validate_function_returns(statements) -> bool:
+def _validate_function_returns(statements, return_type) -> bool:
     fork_statements = []
     for statement in statements:
         node_type = statement['node']
 
-        if node_type == Node.RETURN:
+        if node_type == return_type:
             return True
 
         elif node_type == Node.IF_ELSE:
