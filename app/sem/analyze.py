@@ -98,7 +98,7 @@ ALLOWED_OPERATOR_TYPES = {
         ([TypeReal, TypeReal], TypeBool())
     ],
     Node.NOT: [
-        ([TypeBool, TypeBool], TypeBool())
+        ([TypeBool], TypeBool())
     ],
     Node.AND: [
         ([TypeBool, TypeBool], TypeBool())
