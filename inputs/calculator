@@ -1,0 +1,64 @@
+const OP_ADD: Str = "+";
+const OP_SUB: Str = "-";
+const OP_MUL: Str = "*";
+const OP_DIV: Str = "/";
+
+fn apply_operator(memory: Real, operator: Str, value: Real): Real {
+    if operator == OP_ADD {
+        return memory + value;
+    }
+    if operator == OP_SUB {
+        return memory - value;
+    }
+    if operator == OP_MUL {
+        return memory * value;
+    }
+    if operator == OP_DIV {
+        return memory / value;
+    }
+
+    return 0.0;
+}
+
+fn main() {
+    write("Welcome in calculator.\n");
+    write("Enter operands and operators followed on by one.\n");
+    write("Supported operators: +, -, *, /\n");
+    write("Previous result is stored into a memory\n");
+    write("and is used as a next operand.\n");
+
+    var is_value: Bool = true;
+    var input: Str = "";
+    var memory: Real = 0.0;
+    var value: Real = 0.0;
+    var operator: Str = OP_ADD;
+
+    while !eof() {
+        if is_value {
+            write(">>V>>: ");
+        } else {
+            write(">>O>>: ");
+        }
+
+        if (input = read_line()) == "" {
+            continue;
+        }
+
+        if is_value {
+            value = real(input);
+            memory = apply_operator(memory, operator, value);
+            write(str(memory) + "\n");
+            is_value = false;
+        }
+        else {
+            if operator != OP_ADD & operator != OP_SUB & operator != OP_MUL & operator != OP_DIV {
+                write("invalid operator");
+                continue;
+            }
+            operator = input;
+            is_value = true;
+        }
+    }
+
+    return;
+}

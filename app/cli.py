@@ -33,7 +33,7 @@ def main():
     # Build the lexical_analyzer
     lexer = ply.lex.lex(module=app.lex)
 
-    data = open('../inputs/input_test_2.txt', 'r').read()
+    data = open('../inputs/calculator', 'r').read()
     lexer.input(data)
 
     # Tokenize
@@ -50,7 +50,9 @@ def main():
     if app.sem.analyze(ast):
         print_tree(ast)
         cls = generate("Main", ast)
-        create_classfile(cls, open('Main.class', 'wb'))
+        f = open('Main.class', 'wb')
+        create_classfile(cls, f)
+        f.close()
 
 
 if __name__ == '__main__':
