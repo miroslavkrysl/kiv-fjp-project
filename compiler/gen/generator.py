@@ -746,16 +746,17 @@ def _exp_value_array(code: Code, exp):
     for (i, item) in enumerate(items):
         code.dup()
         code.const_int(i)
+        item_type = item['type']
         _expression(code, item)
-        if isinstance(t.inner, TypeInt):
+        if isinstance(item_type, TypeInt):
             code.array_store_int()
-        elif isinstance(t.inner, TypeReal):
+        elif isinstance(item_type, TypeReal):
             code.array_store_double()
-        elif isinstance(t.inner, TypeBool):
+        elif isinstance(item_type, TypeBool):
             code.array_store_boolean()
-        elif isinstance(t.inner, TypeStr):
+        elif isinstance(item_type, TypeStr):
             code.array_store_reference()
-        elif isinstance(t.inner, TypeArray):
+        elif isinstance(item_type, TypeArray):
             code.array_store_reference()
         else:
             raise NotImplementedError()
