@@ -449,6 +449,10 @@ def _validate_var_store(expression) -> Optional[Type]:
         return None
 
     exp_type = _validate_expression(exp)
+
+    if exp_type is None:
+        return None
+
     if var[0] != exp_type:
         _errors.append(f'Can not assign a value of type {exp_type} into variable \'{name}\' of type {var[0]}.')
         return None
@@ -476,6 +480,10 @@ def _validate_array_store(expression) -> Optional[Type]:
         return None
 
     exp_type = _validate_expression(exp)
+
+    if exp_type is None:
+        return None
+
     if target_type != exp_type:
         _errors.append(f'Can not store value of type {exp_type} into {target_type}.')
         return None
@@ -490,6 +498,9 @@ def _validate_array_access(exp_type: Type, indexes_exps) -> Optional[Type]:
         return None
 
     indexes_types = [_validate_expression(i) for i in indexes_exps]
+
+    if any(t is None for t in indexes_types):
+        return None
 
     for (i, t) in enumerate(indexes_types):
         if t != TypeInt():
@@ -515,7 +526,6 @@ def _validate_operator(expression) -> Optional[Type]:
     sub_exp_types = [_validate_expression(e) for e in sub_exps]
 
     if any(s is None for s in sub_exp_types):
-        # type error already registered
         return None
 
     allowed = ALLOWED_OPERATOR_TYPES[node_type]
@@ -569,6 +579,9 @@ def _validate_array_value(expression) -> Optional[TypeArray]:
     """
     items = expression['items']
     items_types = [_validate_expression(item) for item in items]
+
+    if any(t is None for t in items_types):
+        return None
 
     if len(items_types) == 0:
         t = TypeArray(1, TypeAny())
