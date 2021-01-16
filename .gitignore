@@ -1,6 +1,6 @@
 .idea
 **/venv/**
 **/__pycache__/**
-app/**/parser.out
-app/**/parsetab.py
+compiler/**/parser.out
+compiler/**/parsetab.py
 *.class

@@ -2,11 +2,11 @@ import struct
 from enum import IntFlag
 from typing import BinaryIO
 
-from app.gen.code import Code
-from app.gen.constant import JConstUtf8, JConstInt, JConstLong, JConstFloat, JConstDouble, JConstString, JConstClass, \
+from compiler.gen.code import Code
+from compiler.gen.constant import JConstUtf8, JConstInt, JConstLong, JConstFloat, JConstDouble, JConstString, JConstClass, \
     JConstFieldRef, JConstMethodRef, JConstNameAndType, JConst
-from app.gen.opcode import Opcode
-from app.gen.cls import Class, Field, Method
+from compiler.gen.opcode import Opcode
+from compiler.gen.cls import Class, Field, Method
 
 MAGIC = 0xCAFEBABE
 MINOR_VERSION = 0

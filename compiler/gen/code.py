@@ -1,12 +1,12 @@
 from enum import IntEnum
 from typing import List, Optional, Any, Dict
 
-from app.gen.constant import ConstantPool
-from app.gen.descriptor import JOperandType, JOperandTypeInt, JOperandTypeLong, JOperandTypeFloat, JOperandTypeDouble, \
+from compiler.gen.constant import ConstantPool
+from compiler.gen.descriptor import JOperandType, JOperandTypeInt, JOperandTypeLong, JOperandTypeFloat, JOperandTypeDouble, \
     JOperandTypeReference, FieldDescriptor, MethodDescriptor, ArrayDesc, IntDesc, LongDesc, FloatDesc, DoubleDesc, \
     ByteDesc, BooleanDesc, CharDesc, ShortDesc, ClassDesc
-from app.gen.opcode import Opcode
-from app.util import is_byte, is_short
+from compiler.gen.opcode import Opcode
+from compiler.util import is_byte, is_short
 
 
 class ArrayType(IntEnum):

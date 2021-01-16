@@ -2,7 +2,7 @@ import re
 
 from ply.lex import TOKEN
 
-from app.util import replace_escapes
+from compiler.util import replace_escapes
 
 keywords = {
     'var': 'VAR',

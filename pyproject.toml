@@ -6,9 +6,7 @@ authors = ["Miroslav Krýsl <krysl@students.zcu.cz>", "Tomáš Květoň <kvetont
 
 [tool.poetry.dependencies]
 python = "^3.9.0"
-click = "^7.1.2"
 ply = "^3.11"
-numpy = "^1.19.4"
 
 [tool.poetry.dev-dependencies]
 

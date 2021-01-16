@@ -1,4 +1,4 @@
-from app.gen.descriptor import MethodDescriptor, ClassDesc, IntDesc, BooleanDesc, DoubleDesc, ArrayDesc
+from compiler.gen.descriptor import MethodDescriptor, ClassDesc, IntDesc, BooleanDesc, DoubleDesc, ArrayDesc
 
 
 # --- Types ---

@@ -1,4 +1,4 @@
-from app.lang_types import TypeVoid
+from compiler.lang_types import TypeVoid
 
 FN_MAIN = 'main'
 FN_MAIN_PARAMS = ()

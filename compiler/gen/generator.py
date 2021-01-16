@@ -1,17 +1,17 @@
 from typing import Optional, List, Dict, Tuple
 
-from app.gen.code import Code
-from app.gen.descriptor import ArrayDesc, FieldDescriptor, IntDesc, DoubleDesc, BooleanDesc, ClassDesc, \
+from compiler.gen.code import Code
+from compiler.gen.descriptor import ArrayDesc, FieldDescriptor, IntDesc, DoubleDesc, BooleanDesc, ClassDesc, \
     MethodDescriptor
-from app.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_MAIN_NAME, J_MAIN_DESCRIPTOR, \
+from compiler.gen.predefined import J_CLINIT_NAME, J_CLINIT_DESCRIPTOR, JC_STRING, J_MAIN_NAME, J_MAIN_DESCRIPTOR, \
     JM_STRING_LENGTH, JSM_INT_TO_STRING, JSM_INT_PARSE, JSM_BOOLEAN_PARSE, JSM_DOUBLE_PARSE, JSM_DOUBLE_TO_STRING, \
     JSM_BOOLEAN_TO_STRING, JSF_STDIN, JM_PRINT, JSF_STDOUT, JC_BUFF_READER, JM_READLINE, JM_STRING_CONCAT, \
     JM_STRING_EQUALS, JC_INPUT_STREAM_READER, JIM_INPUT_STREAM_READER, JIM_BUFF_READER, JM_STRING_SUBSTRING
-from app.gen.cls import Class, Method
-from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
+from compiler.gen.cls import Class, Method
+from compiler.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, \
     FN_REAL, FN_BOOL, FN_STR, FN_WRITE, FN_READ_LINE, FN_SUBSTRING, FN_EOF
-from app.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray, TypeVoid
-from app.syntax import Node
+from compiler.lang_types import TypeInt, TypeReal, TypeBool, TypeStr, Type, TypeArray, TypeVoid
+from compiler.syntax import Node
 
 
 PREFIX = '$'

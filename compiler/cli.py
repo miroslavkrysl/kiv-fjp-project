@@ -1,18 +1,17 @@
 # PLY's documentation: http://www.dabeaz.com/ply/ply.html
 import os
 import re
-from pprint import pprint, pp
 
 import sys
 import ply.lex
 import ply.yacc
-import app.lex
-import app.syntax
-import app.sem.analyze
-from app.gen.classfile import create_classfile
-from app.gen.generator import generate
-from app.lex import LexerError
-from app.syntax import SyntaxerError
+import compiler.lex
+import compiler.syntax
+import compiler.sem.analyze
+from compiler.gen.classfile import create_classfile
+from compiler.gen.generator import generate
+from compiler.lex import LexerError
+from compiler.syntax import SyntaxerError
 
 CLASS_NAME_REGEX = r'^([^\.;\[/]+\.)*[^\.;\[/]+$'
 
@@ -38,7 +37,7 @@ def print_tree(x, level=0):
 
 def main():
     # Build the lexical_analyzer
-    lexer = ply.lex.lex(module=app.lex)
+    lexer = ply.lex.lex(module=compiler.lex)
 
     if len(sys.argv) < 3:
         print("Parameters does not match the format!")
@@ -68,10 +67,10 @@ def main():
     #     print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
     try:
-        parser = ply.yacc.yacc(module=app.syntax, debug=False)
+        parser = ply.yacc.yacc(module=compiler.syntax, debug=False)
         ast = parser.parse(data, lexer=lexer, tracking=True, debug=False)
 
-        if app.sem.analyze(ast):
+        if compiler.sem.analyze(ast):
             # print_tree(ast)
             cls = generate(output_class_name, ast)
             output_file = open(output_class_name + '.class', 'wb')
@@ -81,7 +80,3 @@ def main():
         pass
     except LexerError:
         pass
-
-
-if __name__ == '__main__':
-    sys.exit(main())

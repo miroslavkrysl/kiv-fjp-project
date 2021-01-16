@@ -1,11 +1,11 @@
 # Here goes AST analyze process
 from typing import List, Optional, Tuple, Iterable
 
-from app.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, FN_REAL, FN_BOOL, FN_STR, \
+from compiler.sem.predefined import FN_MAIN, FN_MAIN_PARAMS, FN_MAIN_RETURN, FN_LEN, FN_INT, FN_REAL, FN_BOOL, FN_STR, \
     FN_SUBSTRING, FN_WRITE, FN_READ_LINE, FN_EOF
-from app.syntax.ast import Node
-from app.lang_types import Type, TypeInt, TypeReal, TypeStr, TypeBool, TypeArray, TypeAny, BaseType, TypeVoid
-from app.util import is_int
+from compiler.syntax.ast import Node
+from compiler.lang_types import Type, TypeInt, TypeReal, TypeStr, TypeBool, TypeArray, TypeAny, BaseType, TypeVoid
+from compiler.util import is_int
 
 _vars = []  # Key = depth, Value => Key = identifier, Value = (type, is constant)
 

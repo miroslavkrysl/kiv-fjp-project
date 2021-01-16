@@ -1,10 +1,10 @@
 from typing import Tuple, Dict
 
-from app.gen.code import Code
-from app.gen.constant import ConstantPool
-from app.gen.descriptor import MethodDescriptor, FieldDescriptor, IntDesc, LongDesc, FloatDesc, DoubleDesc, ClassDesc, \
+from compiler.gen.code import Code
+from compiler.gen.constant import ConstantPool
+from compiler.gen.descriptor import MethodDescriptor, FieldDescriptor, IntDesc, LongDesc, FloatDesc, DoubleDesc, ClassDesc, \
     ArrayDesc
-from app.gen.predefined import JC_OBJECT
+from compiler.gen.predefined import JC_OBJECT
 
 
 class Field:

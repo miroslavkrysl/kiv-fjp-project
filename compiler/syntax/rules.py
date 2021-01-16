@@ -1,6 +1,6 @@
-from app.syntax.ast import Node
+from compiler.syntax.ast import Node
 
-from app.lex import tokens
+from compiler.lex import tokens
 
 precedence = (
     ('right', 'ASSIGN'),
