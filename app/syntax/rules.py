@@ -414,16 +414,6 @@ def p_load(p):
         p[0] = {'node': Node.ARRAY_LOAD, 'name': p[1], 'indexes': p[2]}
 
 
-def p_var(p):
-    """
-    var     : IDENTIFIER
-    """
-    if len(p) == 4:
-        p[0] = {'node': Node.VARIABLE_STORE, 'name': p[1], 'expression': p[3]}
-    else:
-        p[0] = {'node': Node.ARRAY_STORE, 'name': p[1], 'indexes': p[2], 'expression': p[4]}
-
-
 def p_store(p):
     """
     store   : IDENTIFIER ASSIGN expression
