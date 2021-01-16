@@ -52,7 +52,7 @@ fn main() {
         }
         else {
             if input != OP_ADD & input != OP_SUB & input != OP_MUL & input != OP_DIV {
-                write("invalid operator");
+                write("invalid operator\n");
                 continue;
             }
             operator = input;
