@@ -518,6 +518,10 @@ def p_items_list(p):
 
 # --- Other ---
 
+class SyntaxerError(Exception):
+    pass
+
+
 # Error rule for syntax errors
 def p_error(p):
     if p is not None:
@@ -525,4 +529,4 @@ def p_error(p):
     else:
         print("Unexpected end of input")
 
-    # raise SyntaxError()
+    raise SyntaxerError()

@@ -141,7 +141,12 @@ def find_column(inp, pos):
     return pos - line_start
 
 
+class LexerError(Exception):
+    pass
+
+
 # Error handling rule
 def t_error(t):
     print("lexer error: line=", t.lexer.lineno, "col=", find_column(t.lexer.lexdata, t.lexer.lexpos))
-    t.lexer.skip(1)
+
+    raise LexerError()

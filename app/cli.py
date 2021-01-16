@@ -11,7 +11,8 @@ import app.syntax
 import app.sem.analyze
 from app.gen.classfile import create_classfile
 from app.gen.generator import generate
-
+from app.lex import LexerError
+from app.syntax import SyntaxerError
 
 CLASS_NAME_REGEX = r'^([^\.;\[/]+\.)*[^\.;\[/]+$'
 
@@ -66,15 +67,20 @@ def main():
     #     print(tok)
     #     print("{:<20} {:<30} {:<5} {:<5}".format(tok.type, tok.value, tok.lineno, tok.lexpos))
 
-    parser = ply.yacc.yacc(module=app.syntax, debug=False)
-    ast = parser.parse(data, lexer=lexer, tracking=True, debug=False)
+    try:
+        parser = ply.yacc.yacc(module=app.syntax, debug=False)
+        ast = parser.parse(data, lexer=lexer, tracking=True, debug=False)
 
-    if app.sem.analyze(ast):
-        # print_tree(ast)
-        cls = generate(output_class_name, ast)
-        output_file = open(output_class_name + '.class', 'wb')
-        create_classfile(cls, output_file)
-        output_file.close()
+        if app.sem.analyze(ast):
+            # print_tree(ast)
+            cls = generate(output_class_name, ast)
+            output_file = open(output_class_name + '.class', 'wb')
+            create_classfile(cls, output_file)
+            output_file.close()
+    except SyntaxerError:
+        pass
+    except LexerError:
+        pass
 
 
 if __name__ == '__main__':
