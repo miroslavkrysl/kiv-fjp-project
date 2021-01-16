@@ -418,6 +418,9 @@ def _validate_function_call(expression) -> Optional[Type]:
 
     args_types = [_validate_expression(i) for i in args]
 
+    if any(t is None for t in args_types):
+        return None
+
     for (i, t) in enumerate(args_types):
         if t.is_array_any():
             _errors.append(f'{i}. argument type of function \'{name}\' call is ambiguous.')
