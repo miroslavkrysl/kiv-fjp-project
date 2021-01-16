@@ -185,7 +185,7 @@ def _analyze_layer(statements, in_loop, return_type=None, params=None) -> bool:
             if not _analyze_layer(stmts, in_loop, ret_type, params):
                 break
             if not _validate_function_returns(stmts, Node.RETURN_VOID if isinstance(ret_type, TypeVoid) else Node.RETURN):
-                print(f'Function \'{name}({", ".join(str(t) for t in params_types)})\' may not have a return.')
+                print(f'Function \'{name}({", ".join(str(t) for t in params_types)})\' may end without a return.')
                 break
 
         # Variable and constant definition
@@ -513,7 +513,6 @@ def _validate_operator(expression) -> Optional[Type]:
 
     if any(s is None for s in sub_exp_types):
         # type error already registered
-        expression.append(None)
         return None
 
     allowed = ALLOWED_OPERATOR_TYPES[node_type]
