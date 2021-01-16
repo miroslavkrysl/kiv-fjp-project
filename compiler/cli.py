@@ -76,6 +76,7 @@ def main():
             output_file = open(output_class_name + '.class', 'wb')
             create_classfile(cls, output_file)
             output_file.close()
+            print("Output file generated successfully!")
     except SyntaxerError:
         pass
     except LexerError:
